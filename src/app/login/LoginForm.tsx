@@ -2,9 +2,19 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  linkWithCredential,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  type AuthCredential,
+  type AuthError,
+} from "firebase/auth";
 import { auth } from "@/firebase/config";
 import { getFirebaseErrorMessage } from "@/lib/firebase-error-messages";
+import { PasswordInput } from "@/components/PasswordInput";
+
+type LinkPrompt = { email: string; credential: AuthCredential };
 
 export function LoginForm() {
   const router = useRouter();
@@ -13,6 +23,26 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  // Test-only: the real Google popup (signInWithPopup) cannot be driven by
+  // browser automation (it requires a genuine Google login). This lazy
+  // initializer lets an E2E test simulate the
+  // account-exists-with-different-credential collision via a query param, so
+  // the rest of the linking flow below — real signInWithEmailAndPassword,
+  // real linkWithCredential, real error handling — can be exercised against
+  // a live Firebase project. Inert in production builds and on the server.
+  const [linkPrompt, setLinkPrompt] = useState<LinkPrompt | null>(() => {
+    if (typeof window === "undefined" || process.env.NODE_ENV === "production") return null;
+    const simulatedEmail = new URLSearchParams(window.location.search).get(
+      "__e2eSimulateGoogleCollision",
+    );
+    if (!simulatedEmail) return null;
+    return {
+      email: simulatedEmail,
+      credential: GoogleAuthProvider.credential("e2e-test-id-token", "e2e-test-access-token"),
+    };
+  });
+  const [linkPassword, setLinkPassword] = useState("");
+  const [linking, setLinking] = useState(false);
 
   async function postLogin(idToken: string, provider: "password" | "google") {
     const response = await fetch("/api/auth/login", {
@@ -54,15 +84,66 @@ export function LoginForm() {
 
   async function handleGoogleSignIn() {
     setError(null);
+    setLinkPrompt(null);
     setGoogleSubmitting(true);
     try {
       const credential = await signInWithPopup(auth, new GoogleAuthProvider());
       const idToken = await credential.user.getIdToken();
       await postLogin(idToken, "google");
     } catch (err) {
-      setError(getFirebaseErrorMessage(err));
+      const code = (err as { code?: string } | null)?.code;
+      if (code === "auth/account-exists-with-different-credential") {
+        const pendingCredential = GoogleAuthProvider.credentialFromError(err as AuthError);
+        const linkEmail = (err as { customData?: { email?: string } } | null)?.customData?.email;
+        if (pendingCredential && linkEmail) {
+          setLinkPrompt({ email: linkEmail, credential: pendingCredential });
+        } else {
+          setError(getFirebaseErrorMessage(err));
+        }
+      } else {
+        setError(getFirebaseErrorMessage(err));
+      }
     } finally {
       setGoogleSubmitting(false);
+    }
+  }
+
+  async function handleLinkAccounts(event: FormEvent) {
+    event.preventDefault();
+    if (!linkPrompt) return;
+
+    setError(null);
+    setLinking(true);
+    try {
+      // Kept as two separate try/catch blocks so a failure here can't be
+      // misreported as a wrong password: Firebase happens to map some
+      // linkWithCredential failures (e.g. a stale/invalid Google credential)
+      // to the SAME auth/invalid-credential code used for a bad password,
+      // which would otherwise show the misleading "Invalid email or
+      // password." message even though the password was correct.
+      let existing;
+      try {
+        existing = await signInWithEmailAndPassword(auth, linkPrompt.email, linkPassword);
+      } catch (err) {
+        setError(getFirebaseErrorMessage(err));
+        return;
+      }
+
+      try {
+        await linkWithCredential(existing.user, linkPrompt.credential);
+      } catch {
+        setError(
+          "Your password was correct, but we couldn't link your Google account right now. Please try again, or continue signing in with your password.",
+        );
+        return;
+      }
+
+      const idToken = await existing.user.getIdToken();
+      setLinkPrompt(null);
+      setLinkPassword("");
+      await postLogin(idToken, "password");
+    } finally {
+      setLinking(false);
     }
   }
 
@@ -98,9 +179,8 @@ export function LoginForm() {
               Forgot Password?
             </a>
           </div>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="••••••••"
             className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
             value={password}
@@ -156,6 +236,46 @@ export function LoginForm() {
           {googleSubmitting ? "Signing in..." : "Continue with Google"}
         </span>
       </button>
+
+      {linkPrompt && (
+        <form
+          className="mt-6 p-4 space-y-3 bg-surface-container-low border border-outline-variant rounded-lg"
+          onSubmit={handleLinkAccounts}
+        >
+          <p className="text-label-md text-on-surface">
+            An account already exists for <span className="font-bold">{linkPrompt.email}</span> using a
+            password. Enter that password to link your Google sign-in to it.
+          </p>
+          <PasswordInput
+            id="linkPassword"
+            aria-label="Password for account linking"
+            placeholder="••••••••"
+            className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
+            value={linkPassword}
+            onChange={(e) => setLinkPassword(e.target.value)}
+          />
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={linking || !linkPassword}
+              className="h-12 px-6 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all disabled:opacity-60"
+            >
+              {linking ? "Linking..." : "Link Google Account"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLinkPrompt(null);
+                setLinkPassword("");
+              }}
+              disabled={linking}
+              className="h-12 px-6 border border-outline-variant text-primary text-body-md font-bold rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

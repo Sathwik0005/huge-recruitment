@@ -9,8 +9,9 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "@/firebase/config";
-import { validatePassword, PASSWORD_REQUIREMENTS_HINT } from "@/lib/password";
+import { validatePassword } from "@/lib/password";
 import { getFirebaseErrorMessage } from "@/lib/firebase-error-messages";
+import { PasswordInput } from "@/components/PasswordInput";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,12 @@ export function RegisterForm() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+
+  function handlePasswordChange(value: string) {
+    setPassword(value);
+    const passwordErrors = validatePassword(value);
+    setErrors((prev) => ({ ...prev, password: value ? passwordErrors[0] : undefined }));
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -141,28 +148,22 @@ export function RegisterForm() {
         <label className="text-label-md text-on-surface-variant block" htmlFor="password">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           placeholder="••••••••"
           className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => handlePasswordChange(e.target.value)}
         />
-        {errors.password ? (
-          <p className="text-label-sm text-error">{errors.password}</p>
-        ) : (
-          <p className="text-label-sm text-on-surface-variant">{PASSWORD_REQUIREMENTS_HINT}</p>
-        )}
+        {errors.password && <p className="text-label-sm text-error">{errors.password}</p>}
       </div>
 
       <div className="space-y-1">
         <label className="text-label-md text-on-surface-variant block" htmlFor="confirmPassword">
           Confirm Password
         </label>
-        <input
+        <PasswordInput
           id="confirmPassword"
-          type="password"
           placeholder="••••••••"
           className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
           value={confirmPassword}
@@ -179,7 +180,17 @@ export function RegisterForm() {
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
-          <span>I agree to the Terms of Service and Privacy Policy.</span>
+          <span>
+            I agree to the{" "}
+            <a className="text-primary font-bold hover:underline" href="/terms-of-service" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a className="text-primary font-bold hover:underline" href="/privacy-policy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </a>
+            .
+          </span>
         </label>
         {errors.terms && <p className="text-label-sm text-error">{errors.terms}</p>}
       </div>

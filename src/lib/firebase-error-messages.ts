@@ -9,6 +9,8 @@ const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
   "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
   "auth/popup-closed-by-user": "Google sign-in was cancelled.",
   "auth/cancelled-popup-request": "Google sign-in was cancelled.",
+  "auth/account-exists-with-different-credential":
+    "An account with this email already exists using a different sign-in method.",
 };
 
 const DEFAULT_MESSAGE = "Something went wrong. Please try again.";
