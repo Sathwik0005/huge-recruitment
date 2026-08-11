@@ -85,7 +85,7 @@ describe("POST /api/users", () => {
     [{ idToken: "token", lastName: "Lee" }, "missing firstName"],
     [{ idToken: "token", firstName: "Ann" }, "missing lastName"],
     [{}, "missing everything"],
-  ])("returns 400 for %o (%s), without calling verifyIdToken", async (body) => {
+  ])("returns 400 for %o (%s), without calling verifyIdToken", async (body, _description) => {
     const response = await POST(makeRequest(body));
 
     expect(response.status).toBe(400);

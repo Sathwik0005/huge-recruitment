@@ -24,7 +24,7 @@ and page structure should be preserved unless a task explicitly authorises a cha
 
 ```
 src/app/
-  layout.tsx, page.tsx (protected home), globals.css
+  layout.tsx, page.tsx (public homepage), globals.css
   register/{page.tsx, RegisterForm.tsx}
   login/{page.tsx, LoginForm.tsx}
   forgot-password/{page.tsx, ForgotPasswordForm.tsx}
@@ -132,9 +132,9 @@ Features are tracked as a step-numbered roadmap, not a bug backlog:
 | Area | Type | Status | Notes |
 | --- | --- | --- | --- |
 | Register / verify-email / login / forgot-password | Pages | Done (foundation) | Firebase-backed; see `PROJECT_FOUNDATION_BLUEPRINT.md` for original scope |
-| `/` (protected home) | Page | Done (foundation) | Gated by `src/proxy.ts`'s edge cookie-presence check |
+| `/` (public homepage) | Page | Done | Public marketing homepage (spec 02); Header/Footer render site-wide from `src/app/layout.tsx` |
 | Session handling | Cross-cutting | Done (foundation) | `src/lib/session.ts` + `src/firebase/admin.ts` |
-| Route protection | Cross-cutting | Partial | Only edge presence-check exists (`src/proxy.ts`, guards `/` only) — per-route server-side verification should be added as new protected routes are built |
+| Route protection | Cross-cutting | None | `src/proxy.ts`'s `PROTECTED_PATHS` is empty — `/` became public in spec 02; edge presence-check + server-side verification should be added back once a protected route (e.g. a future dashboard) exists |
 | Test infrastructure (Vitest/Playwright config) | Cross-cutting | Not started | Deps installed, no config/scripts yet |
 | Jobs / candidates / applications | Feature area | Not started | Greenfield — next roadmap steps |
 | Admin/recruiter role & dashboard | Feature area | Not started | No `role`-based access control beyond the `Role` enum on `User` existing in schema |

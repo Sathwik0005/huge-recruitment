@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/session-cookie";
 
-const PROTECTED_PATHS = ["/"];
+const PROTECTED_PATHS: string[] = [];
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_PATHS.includes(pathname);
