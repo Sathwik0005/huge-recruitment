@@ -32,4 +32,239 @@ model User {
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  createdJobs Job[] @relation("JobCreatedBy")
+  updatedJobs Job[] @relation("JobUpdatedBy")
+}
+
+enum SectorName {
+  PRODUCTION
+  WAREHOUSING
+  MANUFACTURING
+  DISTRIBUTION
+  AUTOMOTIVE
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum EmploymentType {
+  PERMANENT
+  TEMPORARY
+  TEMP_TO_PERM
+  FIXED_TERM
+  CONTRACT
+}
+
+enum PayType {
+  NUMERIC
+  COMPETITIVE
+}
+
+enum PayPeriod {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum ShiftCategory {
+  DAY
+  NIGHT
+  ROTATING
+  WEEKEND
+  FLEXIBLE
+  OTHER
+}
+
+enum ApplicationStatus {
+  NEW
+  REVIEWING
+  SHORTLISTED
+  REJECTED
+  HIRED
+  WITHDRAWN
+}
+
+model Sector {
+  id        String     @id @default(cuid())
+  name      SectorName @unique
+  label     String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  jobs Job[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobs Job[]
+}
+
+model Job {
+  id       String @id @default(cuid())
+  title    String
+  slug     String @unique
+
+  sectorId       String
+  sector         Sector         @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+  employmentType EmploymentType
+  overview       String
+  status         JobStatus      @default(DRAFT)
+
+  townOrCity     String
+  countyOrRegion String?
+  postcode       String?
+
+  payType                   PayType
+  currency                  String  @default("GBP")
+  additionalPayInformation  String?
+
+  referenceCode String? @unique
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  shortDescription       String?
+  startDate              DateTime?
+  closingDate            DateTime?
+  vacancyCount           Int?
+  hoursPerWeek           Decimal?
+  shiftSummary           String?
+  additionalInformation  String?
+  showPostedDate         Boolean   @default(true)
+  featured               Boolean   @default(false)
+
+  publishedAt DateTime?
+  closedAt    DateTime?
+
+  createdById String?
+  createdBy   User?   @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   User?   @relation("JobUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payRates         JobPayRate[]
+  shifts           JobShift[]
+  responsibilities JobResponsibility[]
+  requirements     JobRequirement[]
+  benefits         JobBenefit[]
+  applications     JobApplication[]
+
+  @@index([status, publishedAt])
+  @@index([sectorId])
+  @@index([employmentType])
+  @@index([townOrCity])
+}
+
+model JobPayRate {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  label   String?
+  minimum Decimal
+  maximum Decimal?
+  period  PayPeriod
+
+  isPrimary    Boolean @default(false)
+  displayOrder Int     @default(0)
+
+  @@index([jobId])
+}
+
+model JobShift {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  category  ShiftCategory
+  label     String?
+  startTime String?
+  endTime   String?
+  days      String?
+  details   String?
+
+  displayOrder Int @default(0)
+
+  @@index([jobId])
+}
+
+model JobResponsibility {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  text         String
+  displayOrder Int    @default(0)
+
+  @@index([jobId])
+}
+
+model JobRequirement {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  text         String
+  displayOrder Int    @default(0)
+
+  @@index([jobId])
+}
+
+model JobBenefit {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  text         String
+  displayOrder Int    @default(0)
+
+  @@index([jobId])
+}
+
+model JobApplication {
+  id              String @id @default(cuid())
+  publicReference String @unique
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  fullName String
+  email    String
+  phone    String
+  location String
+
+  status ApplicationStatus @default(NEW)
+
+  privacyConsentAt     DateTime
+  privacyPolicyVersion String
+
+  cvBlobPathname     String?
+  cvOriginalFilename String?
+  cvMimeType         String?
+  cvSizeBytes        Int?
+  cvUploadedAt       DateTime?
+  cvUploadState      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId, status])
+  @@index([createdAt])
+  @@index([email, jobId, createdAt])
 }
