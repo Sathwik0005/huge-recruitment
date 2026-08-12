@@ -2,9 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/session-cookie";
 
 const PROTECTED_PATHS: string[] = [];
+const PROTECTED_PATH_PREFIXES: string[] = ["/admin"];
 
 function isProtectedPath(pathname: string) {
-  return PROTECTED_PATHS.includes(pathname);
+  return (
+    PROTECTED_PATHS.includes(pathname) ||
+    PROTECTED_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  );
 }
 
 export function proxy(request: NextRequest) {
