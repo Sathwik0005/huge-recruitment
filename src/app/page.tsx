@@ -3,30 +3,8 @@ import HeroCarousel from "@/components/HeroCarousel";
 import Reveal from "@/components/Reveal";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 import HeroSearch from "./HeroSearch";
-
-const VACANCIES = [
-  {
-    type: "Full Time",
-    pay: "£45k - £55k",
-    title: "Senior Operations Manager",
-    location: "Birmingham, UK",
-    tags: ["Logistics", "Leadership"],
-  },
-  {
-    type: "Contract",
-    pay: "£350 - £400/day",
-    title: "Compliance Specialist",
-    location: "Manchester, UK",
-    tags: ["Legal", "Audit"],
-  },
-  {
-    type: "Permanent",
-    pay: "£60k - £75k",
-    title: "Plant Director",
-    location: "Coventry, UK",
-    tags: ["Automotive", "Executive"],
-  },
-];
+import { getFeaturedJobs } from "@/lib/job-dto";
+import { formatJobLocation, formatJobPay, formatEmploymentType } from "@/lib/job-formatters";
 
 type SectorVariant = "featured" | "overlay" | "light";
 
@@ -147,7 +125,9 @@ const DIFFERENTIATORS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featuredJobs = await getFeaturedJobs(3);
+
   return (
     <>
       {/* Hero Section */}
@@ -230,6 +210,11 @@ export default function HomePage() {
               delay={sectorIndex * 100}
               className={`${sector.colSpan} group relative overflow-hidden rounded-lg bg-white border border-outline-variant cursor-pointer`}
             >
+              <Link
+                href="/sectors"
+                aria-label={`View the ${sector.title} sector`}
+                className="absolute inset-0 z-20"
+              />
               <div className={`${sector.height} w-full overflow-hidden`}>
                 <img
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -328,46 +313,54 @@ export default function HomePage() {
               View All Openings
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-            {VACANCIES.map((job, jobIndex) => (
-              <Reveal
-                key={job.title}
-                delay={jobIndex * 100}
-                className="bg-surface-container-lowest p-6 border border-outline rounded hover:shadow-xl hover:-translate-y-1 transition-all"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <span className="bg-secondary-container text-primary text-caption px-2 py-1 rounded">
-                    {job.type}
-                  </span>
-                  <span className="text-primary font-bold">{job.pay}</span>
-                </div>
-                <h3 className="text-title-lg font-bold text-primary mb-1">
-                  {job.title}
-                </h3>
-                <p className="text-on-surface-variant flex items-center gap-1 mb-4">
-                  <span className="material-symbols-outlined text-sm">
-                    location_on
-                  </span>{" "}
-                  {job.location}
-                </p>
-                <div className="flex gap-1 flex-wrap mb-6">
-                  {job.tags.map((tag) => (
-                    <span
-
-
-                      key={tag}
-                      className="text-caption bg-surface-container px-2 py-1 rounded"
-                    >
-                      {tag}
+          {featuredJobs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+              {featuredJobs.map((job, jobIndex) => (
+                <Reveal
+                  key={job.id}
+                  delay={jobIndex * 100}
+                  className="relative bg-surface-container-lowest p-6 border border-outline rounded hover:shadow-xl hover:-translate-y-1 transition-all"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="bg-secondary-container text-primary text-caption px-2 py-1 rounded">
+                      {formatEmploymentType(job.employmentType)}
                     </span>
-                  ))}
-                </div>
-                <button className="w-full border border-primary text-primary font-bold py-2 rounded hover:bg-primary hover:text-white transition-all">
-                  Apply Now
-                </button>
-              </Reveal>
-            ))}
-          </div>
+                    <span className="text-primary font-bold">{formatJobPay(job)}</span>
+                  </div>
+                  <h3 className="text-title-lg font-bold text-primary mb-1">
+                    <Link href={`/jobs/${job.slug}`} className="hover:underline">
+                      {job.title}
+                    </Link>
+                  </h3>
+                  <p className="text-on-surface-variant flex items-center gap-1 mb-4">
+                    <span className="material-symbols-outlined text-sm">
+                      location_on
+                    </span>{" "}
+                    {formatJobLocation(job)}
+                  </p>
+                  <div className="flex gap-1 flex-wrap mb-6">
+                    <span className="text-caption bg-surface-container px-2 py-1 rounded">
+                      {job.sector.label}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/jobs/${job.slug}#apply`}
+                    className="block w-full text-center border border-primary text-primary font-bold py-2 rounded hover:bg-primary hover:text-white transition-all"
+                  >
+                    Apply Now
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          ) : (
+            <p className="text-on-surface-variant">
+              No featured opportunities right now — check back soon or{" "}
+              <Link href="/jobs" className="text-primary font-bold underline">
+                browse all openings
+              </Link>
+              .
+            </p>
+          )}
         </div>
       </section>
 

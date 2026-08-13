@@ -202,6 +202,15 @@ export async function getJobBySlugForDetailPage(slug: string): Promise<(PublicJo
   return { ...job, isOpen };
 }
 
+export async function getFeaturedJobs(limit = 3, now: Date = new Date()) {
+  return prisma.job.findMany({
+    where: { ...publiclyVisibleWhere(now), featured: true },
+    select: PUBLIC_JOB_SELECT,
+    orderBy: [{ publishedAt: "desc" }],
+    take: limit,
+  });
+}
+
 export async function getSimilarJobs(job: Pick<PublicJob, "id" | "sector">, limit = 3, now: Date = new Date()) {
   return prisma.job.findMany({
     where: {
