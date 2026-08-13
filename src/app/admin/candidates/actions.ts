@@ -27,8 +27,8 @@ export async function updateApplicationStatus(
 
   try {
     await prisma.jobApplication.update({ where: { id: applicationId }, data: { status } });
-    revalidatePath("/admin/applications");
-    revalidatePath(`/admin/applications/${applicationId}`);
+    revalidatePath("/admin/candidates");
+    revalidatePath(`/admin/candidates/${applicationId}`);
     return { success: true };
   } catch (error) {
     console.error("Failed to update application status", error);

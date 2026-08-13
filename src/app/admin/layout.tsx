@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin-session";
-import AdminNav from "./AdminNav";
+import { AdminShell } from "./AdminShell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const result = await requireAdminSession();
@@ -14,12 +14,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       redirect("/");
   }
 
-  return (
-    <div className="flex-1 flex flex-col">
-      <AdminNav />
-      <div className="max-w-container-max mx-auto w-full flex-1 px-margin-mobile py-8 md:px-margin-desktop">
-        {children}
-      </div>
-    </div>
-  );
+  return <AdminShell user={result.user}>{children}</AdminShell>;
 }

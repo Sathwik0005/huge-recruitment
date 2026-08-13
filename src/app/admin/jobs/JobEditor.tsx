@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createJob, updateJob } from "./actions";
+import { SectorManager } from "./SectorManager";
+import { ClientPicker } from "./ClientPicker";
 
 const EMPLOYMENT_TYPES = [
   { value: "PERMANENT", label: "Permanent" },
@@ -34,11 +36,13 @@ type ShiftDraft = {
 
 type TextEntryDraft = { text: string };
 
-type SectorOption = { id: string; label: string };
+type SectorOption = { id: string; label: string; isActive: boolean };
+type ClientOption = { id: string; name: string; isActive: boolean };
 
 export type JobEditorInitialValues = {
   title: string;
   sectorId: string;
+  clientId: string;
   employmentType: (typeof EMPLOYMENT_TYPES)[number]["value"];
   overview: string;
   townOrCity: string;
@@ -65,6 +69,7 @@ export type JobEditorInitialValues = {
 const EMPTY_VALUES: JobEditorInitialValues = {
   title: "",
   sectorId: "",
+  clientId: "",
   employmentType: "PERMANENT",
   overview: "",
   townOrCity: "",
@@ -105,11 +110,13 @@ export function JobEditor({
   mode,
   jobId,
   sectors,
+  clients,
   initialValues,
 }: {
   mode: "create" | "edit";
   jobId?: string;
   sectors: SectorOption[];
+  clients: ClientOption[];
   initialValues?: JobEditorInitialValues;
 }) {
   const router = useRouter();
@@ -125,6 +132,7 @@ export function JobEditor({
     return {
       title: values.title,
       sectorId: values.sectorId,
+      clientId: values.clientId || undefined,
       employmentType: values.employmentType,
       overview: values.overview,
       townOrCity: values.townOrCity,
@@ -240,12 +248,15 @@ export function JobEditor({
               required
             >
               <option value="">Select a sector</option>
-              {sectors.map((sector) => (
-                <option key={sector.id} value={sector.id}>
-                  {sector.label}
-                </option>
-              ))}
+              {sectors
+                .filter((sector) => sector.isActive || sector.id === values.sectorId)
+                .map((sector) => (
+                  <option key={sector.id} value={sector.id}>
+                    {sector.label}
+                  </option>
+                ))}
             </select>
+            <SectorManager sectors={sectors} />
           </div>
           <div className="space-y-1">
             <label className={labelClass} htmlFor="employmentType">
@@ -265,6 +276,7 @@ export function JobEditor({
             </select>
           </div>
         </div>
+        <ClientPicker clients={clients} value={values.clientId} onChange={(clientId) => set("clientId", clientId)} />
         <div className="space-y-1">
           <label className={labelClass} htmlFor="overview">
             Role overview

@@ -53,7 +53,7 @@ export async function sendAdminApplicationNotification(input: ApplicationNotific
       <li><strong>Phone:</strong> ${escapeHtml(input.phone)}</li>
       <li><strong>Location:</strong> ${escapeHtml(input.location)}</li>
     </ul>
-    <p><a href="${escapeHtml(appUrl)}/admin/applications/${escapeHtml(input.applicationId)}">View in admin</a></p>
+    <p><a href="${escapeHtml(appUrl)}/admin/candidates/${escapeHtml(input.applicationId)}">View in admin</a></p>
   `;
 
   try {
