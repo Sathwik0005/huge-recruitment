@@ -67,7 +67,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("streams a CSV with the correct headers for an admin caller", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate()]);
+    mockFindMany.mockResolvedValue([makeCandidate()] as never);
 
     const response = await GET(makeRequest());
 
@@ -78,7 +78,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("includes a header row and one row per candidate", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate(), makeCandidate({ id: "app-2", fullName: "John Smith" })]);
+    mockFindMany.mockResolvedValue([makeCandidate(), makeCandidate({ id: "app-2", fullName: "John Smith" })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
@@ -92,7 +92,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("includes the derived verification bucket alongside the raw status", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ status: ApplicationStatus.HIRED })]);
+    mockFindMany.mockResolvedValue([makeCandidate({ status: ApplicationStatus.HIRED })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
@@ -108,7 +108,7 @@ describe("GET /api/admin/candidates/export", () => {
     ["@cmd", "'@cmd"],
   ])("prefixes a formula-injection-guard quote for a cell starting with %s", async (raw, expected) => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ fullName: raw })]);
+    mockFindMany.mockResolvedValue([makeCandidate({ fullName: raw })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
@@ -118,7 +118,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("quote-wraps and doubles internal quotes for a cell containing a comma", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ location: "Foston, Derbyshire" })]);
+    mockFindMany.mockResolvedValue([makeCandidate({ location: "Foston, Derbyshire" })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
@@ -128,7 +128,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("quote-wraps and doubles internal quotes for a cell containing a double quote", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ fullName: 'Jane "JJ" Doe' })]);
+    mockFindMany.mockResolvedValue([makeCandidate({ fullName: 'Jane "JJ" Doe' })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
@@ -138,7 +138,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("quote-wraps a cell containing a newline", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ location: "Line1\nLine2" })]);
+    mockFindMany.mockResolvedValue([makeCandidate({ location: "Line1\nLine2" })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
@@ -148,7 +148,7 @@ describe("GET /api/admin/candidates/export", () => {
 
   it("does not quote-wrap or prefix an ordinary cell", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ fullName: "Jane Doe" })]);
+    mockFindMany.mockResolvedValue([makeCandidate({ fullName: "Jane Doe" })] as never);
 
     const response = await GET(makeRequest());
     const csv = await response.text();
