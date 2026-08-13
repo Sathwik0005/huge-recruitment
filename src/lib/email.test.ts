@@ -8,7 +8,7 @@ vi.mock("resend", () => ({
   }),
 }));
 
-import { sendAdminApplicationNotification } from "./email";
+import { sendAdminApplicationNotification, sendCandidateApplicationConfirmation } from "./email";
 
 const INPUT = {
   applicationId: "app-1",
@@ -62,5 +62,43 @@ describe("sendAdminApplicationNotification", () => {
   it("does not throw when the Resend API call itself fails", async () => {
     mockSend.mockRejectedValue(new Error("Resend is down"));
     await expect(sendAdminApplicationNotification(INPUT)).resolves.toBeUndefined();
+  });
+});
+
+describe("sendCandidateApplicationConfirmation", () => {
+  const CONFIRMATION_INPUT = {
+    applicationId: "app-1",
+    publicReference: "APP-ABC123",
+    jobTitle: "Warehouse Operative",
+    fullName: "Jane Doe",
+    email: "jane@example.com",
+  };
+
+  it("sends via Resend to the candidate's own email", async () => {
+    await sendCandidateApplicationConfirmation(CONFIRMATION_INPUT);
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const call = mockSend.mock.calls[0][0];
+    expect(call.to).toBe("jane@example.com");
+    expect(call.from).toBe("noreply@example.com");
+    expect(call.html).toContain("Jane Doe");
+    expect(call.html).toContain("APP-ABC123");
+  });
+
+  it("HTML-escapes a candidate name containing a script tag", async () => {
+    await sendCandidateApplicationConfirmation({ ...CONFIRMATION_INPUT, fullName: '<script>alert(1)</script>' });
+    const call = mockSend.mock.calls[0][0];
+    expect(call.html).not.toContain("<script>");
+    expect(call.html).toContain("&lt;script&gt;");
+  });
+
+  it("does not throw when Resend is not configured, and skips sending", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    await expect(sendCandidateApplicationConfirmation(CONFIRMATION_INPUT)).resolves.toBeUndefined();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the Resend API call itself fails", async () => {
+    mockSend.mockRejectedValue(new Error("Resend is down"));
+    await expect(sendCandidateApplicationConfirmation(CONFIRMATION_INPUT)).resolves.toBeUndefined();
   });
 });

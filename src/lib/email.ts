@@ -71,3 +71,52 @@ export async function sendAdminApplicationNotification(input: ApplicationNotific
     });
   }
 }
+
+type ApplicationConfirmationInput = {
+  applicationId: string;
+  publicReference: string;
+  jobTitle: string;
+  fullName: string;
+  email: string;
+};
+
+/**
+ * Sends the candidate a confirmation that their application was received.
+ * Mirrors sendAdminApplicationNotification's send-failure handling — never
+ * rolls back an already-persisted application, just logs and swallows.
+ */
+export async function sendCandidateApplicationConfirmation(
+  input: ApplicationConfirmationInput
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    console.error("Resend is not configured; skipping candidate application confirmation", {
+      applicationId: input.applicationId,
+    });
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+
+  const html = `
+    <p>Hi ${escapeHtml(input.fullName)},</p>
+    <p>Thanks for applying for <strong>${escapeHtml(input.jobTitle)}</strong>. We've received your application.</p>
+    <p>Your reference number is <strong>${escapeHtml(input.publicReference)}</strong> — please keep this for your records.</p>
+    <p>Our team will review your application and be in touch if you're shortlisted.</p>
+  `;
+
+  try {
+    await resend.emails.send({
+      from,
+      to: input.email,
+      subject: `Application received: ${input.jobTitle}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send candidate application confirmation", {
+      applicationId: input.applicationId,
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+  }
+}

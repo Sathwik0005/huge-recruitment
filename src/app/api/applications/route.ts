@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isJobPubliclyVisible } from "@/lib/job-status";
 import { verifyUploadedCv, deleteCvBlob } from "@/lib/blob";
-import { sendAdminApplicationNotification } from "@/lib/email";
+import { sendAdminApplicationNotification, sendCandidateApplicationConfirmation } from "@/lib/email";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import {
   guestApplicationSchema,
@@ -116,6 +116,13 @@ export async function POST(request: Request) {
       email: application.email,
       phone: application.phone,
       location: application.location,
+    });
+    await sendCandidateApplicationConfirmation({
+      applicationId: application.id,
+      publicReference: application.publicReference,
+      jobTitle: application.jobTitle,
+      fullName: application.fullName,
+      email: application.email,
     });
 
     return NextResponse.json({ publicReference: application.publicReference }, { status: 201 });
