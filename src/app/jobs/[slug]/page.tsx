@@ -29,7 +29,7 @@ export async function generateMetadata({
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   return {
-    title: `${job.title} | Huge Recruitment`,
+    title: `${job.title} | Huge Requirements Limited`,
     description,
     alternates: appUrl ? { canonical: `${appUrl}/jobs/${job.slug}` } : undefined,
   };

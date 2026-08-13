@@ -13,9 +13,11 @@ export default function Footer() {
     <footer className="bg-primary text-white w-full">
       <div className="w-full py-stack-lg px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter max-w-container-max mx-auto">
         <div className="space-y-4">
-          <span className="text-headline-md font-headline-md font-bold text-secondary-container">
-            Huge Requirements
-          </span>
+          <img
+            src="https://res.cloudinary.com/uhfrtle0/image/upload/v1786575206/company_logo_new.png"
+            alt="Huge Requirements Limited"
+            className="h-20 w-auto object-contain"
+          />
           <p className="text-body-md opacity-70">
             The premier recruitment partner for UK industrial sectors,
             delivering excellence since 2026.
@@ -42,13 +44,13 @@ export default function Footer() {
           <h4 className="text-title-lg font-title-lg text-white">Company</h4>
           <ul className="space-y-2">
             <li>
-              <Link href="/" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Contact Us</Link>
+              <Link href="/contact-us" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Contact Us</Link>
             </li>
             <li>
-              <a href="#" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Privacy Policy</a>
+              <Link href="/privacy-policy" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Privacy Policy</Link>
             </li>
             <li>
-              <a href="#" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Terms of service</a>
+              <Link href="/terms-of-service" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Terms of service</Link>
             </li>
           </ul>
         </div>
@@ -56,11 +58,12 @@ export default function Footer() {
         <div className="space-y-4">
           <h4 className="text-title-lg font-title-lg text-white">Get in Touch</h4>
           <p className="text-body-md opacity-70">
-            Unit 12, Corporate Plaza
+            543, 1 Concourse Way
             <br />
-            Birmingham, B1 2HE
+            Sheffield City Centre, Acero
+            <br />
+            Sheffield S1 2BJ
           </p>
-          <p className="text-body-md font-bold text-white">+44 (0) 121 555 0123</p>
           <p className="text-body-md opacity-70">info@hugerequirements.co.uk</p>
         </div>
       </div>

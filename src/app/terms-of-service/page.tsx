@@ -9,7 +9,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-headline-md text-on-surface mb-3">1. Acceptance of Terms</h2>
             <p className="text-body-md text-on-surface-variant">
-              By creating an account or otherwise using Huge Recruitment (&quot;the Service&quot;), you agree to be
+              By creating an account or otherwise using Huge Requirements Limited (&quot;the Service&quot;), you agree to be
               bound by these Terms of Service. If you do not agree to these terms, do not register for or use
               the Service.
             </p>
@@ -28,7 +28,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-headline-md text-on-surface mb-3">3. Use of the Service</h2>
             <p className="text-body-md text-on-surface-variant mb-3">
-              Huge Recruitment provides tools to help job seekers and employers connect. When using the Service,
+              Huge Requirements Limited provides tools to help job seekers and employers connect. When using the Service,
               you agree not to:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-body-md text-on-surface-variant">
@@ -53,7 +53,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-headline-md text-on-surface mb-3">5. Intellectual Property</h2>
             <p className="text-body-md text-on-surface-variant">
-              The Service, including its design, branding, and underlying software, is owned by Huge Recruitment
+              The Service, including its design, branding, and underlying software, is owned by Huge Requirements Limited
               and protected by applicable intellectual property laws. Content you submit (such as your profile
               information or resume) remains yours, but you grant us a license to use it as necessary to operate
               and provide the Service to you.
@@ -63,7 +63,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-headline-md text-on-surface mb-3">6. Disclaimers</h2>
             <p className="text-body-md text-on-surface-variant">
-              Huge Recruitment is a platform that facilitates connections between job seekers and employers. We
+              Huge Requirements Limited is a platform that facilitates connections between job seekers and employers. We
               do not guarantee employment outcomes, the accuracy of listings posted by third parties, or that the
               Service will be uninterrupted or error-free. The Service is provided &quot;as is&quot; without
               warranties of any kind.
@@ -73,7 +73,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-headline-md text-on-surface mb-3">7. Limitation of Liability</h2>
             <p className="text-body-md text-on-surface-variant">
-              To the fullest extent permitted by law, Huge Recruitment will not be liable for any indirect,
+              To the fullest extent permitted by law, Huge Requirements Limited will not be liable for any indirect,
               incidental, or consequential damages arising from your use of the Service.
             </p>
           </section>

@@ -10,7 +10,7 @@ const hankenGrotesk = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Huge Recruitment",
+  title: "Huge Requirements Limited",
   description: "Elevate your career with specialist guidance",
 };
 

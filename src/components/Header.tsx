@@ -1,126 +1,21 @@
-"use client";
+import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import HeaderClient from "@/components/HeaderClient";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+export default async function Header() {
+  const session = await getSession();
 
-const NAV_LINKS = [
-  { href: "/jobs", label: "Find Jobs" },
-  { href: "/employers", label: "For Employers" },
-  { href: "/sectors", label: "Our Sectors" },
-  { href: "/contact-us", label: "Contact Us" },
-];
+  let isLoggedIn = false;
+  let isAdmin = false;
 
-export default function Header() {
-  const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [lastPathname, setLastPathname] = useState(pathname);
-
-  if (pathname !== lastPathname) {
-    setLastPathname(pathname);
-    setMenuOpen(false);
+  if (session) {
+    isLoggedIn = true;
+    const user = await prisma.user.findUnique({
+      where: { firebaseUid: session.uid },
+      select: { role: true, status: true },
+    });
+    isAdmin = user?.role === "ADMIN" && user?.status === "ACTIVE";
   }
 
-  return (
-    <header className="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant h-20">
-      <div className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-full max-w-container-max mx-auto">
-        <Link href="/" className="flex items-center h-20 shrink-0">
-          {/*
-            Placeholder logo slot — drop the real logo file into
-            public/logos/ (e.g. public/logos/site-logo.png) and update
-            src below to "/logos/site-logo.png", or point src at a
-            hosted URL directly.
-          */}
-          <img
-            src="https://res.cloudinary.com/dgz2omokl/image/upload/v1785160456/WhatsApp_Image_2026-07-25_at_5.11.40_PM_r9jdnn.jpg"
-            alt="Huge Requirements"
-            className="h-full w-auto object-contain"
-          />
-        </Link>
-        <nav className="hidden md:flex items-center gap-6">
-          {NAV_LINKS.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={
-                  active
-                    ? "font-body-md text-body-md text-primary font-bold border-b-2 border-primary pb-1 transition-colors"
-                    : "font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"
-                }
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="hidden md:flex items-center gap-2">
-          <Link
-            href="/login"
-            className="font-body-md text-body-md text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg transition-all duration-200"
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="font-body-md text-body-md bg-primary text-on-primary px-6 py-2 rounded-lg hover:opacity-90 transition-all duration-200"
-          >
-            Register
-          </Link>
-        </div>
-        <button
-          type="button"
-          className="md:hidden flex items-center justify-center w-10 h-10 text-on-surface"
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <span className="material-symbols-outlined text-3xl">
-            {menuOpen ? "close" : "menu"}
-          </span>
-        </button>
-      </div>
-
-      {menuOpen && (
-        <div className="md:hidden absolute top-20 left-0 right-0 bg-surface border-b border-outline-variant shadow-lg">
-          <nav className="flex flex-col px-margin-mobile py-2">
-            {NAV_LINKS.map((link) => {
-              const active = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={
-                    active
-                      ? "font-body-md text-body-md text-primary font-bold py-3 border-b border-outline-variant"
-                      : "font-body-md text-body-md text-on-surface-variant hover:text-primary py-3 border-b border-outline-variant transition-colors"
-                  }
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-            <div className="flex flex-col gap-2 py-3">
-              <Link
-                href="/login"
-                onClick={() => setMenuOpen(false)}
-                className="font-body-md text-body-md text-primary text-center px-4 py-3 rounded-lg border border-primary transition-all duration-200"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMenuOpen(false)}
-                className="font-body-md text-body-md bg-primary text-on-primary text-center px-6 py-3 rounded-lg hover:opacity-90 transition-all duration-200"
-              >
-                Register
-              </Link>
-            </div>
-          </nav>
-        </div>
-      )}
-    </header>
-  );
+  return <HeaderClient isLoggedIn={isLoggedIn} isAdmin={isAdmin} />;
 }

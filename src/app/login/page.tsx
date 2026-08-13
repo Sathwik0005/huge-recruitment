@@ -19,7 +19,7 @@ export default async function LoginPage() {
           <LoginForm />
           <div className="mt-8 text-center">
             <p className="text-body-md text-secondary">
-              New to Huge Recruitment?{" "}
+              New to Huge Requirements Limited?{" "}
               <a className="text-primary font-bold hover:underline" href="/register">
                 Register now
               </a>

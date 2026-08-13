@@ -59,7 +59,6 @@ export default async function JobsPage({
   return (
     <main className="mx-auto w-full max-w-container-max px-margin-mobile py-10 md:px-margin-desktop md:py-14">
       <header className="mb-8 max-w-3xl md:mb-10">
-        <p className="mb-2 text-label-md font-semibold uppercase tracking-wider text-secondary">Huge Recruitment jobs</p>
         <h1 className="mb-3 font-headline-lg text-headline-lg text-primary md:text-[40px] md:leading-[48px]">
           Find your next opportunity
         </h1>
@@ -71,12 +70,6 @@ export default async function JobsPage({
       <Suspense>
         <JobFilters sectors={sectors}>
           <section aria-labelledby="job-results-heading" className="min-w-0">
-            <div className="mb-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
-              <h2 id="job-results-heading" className="font-headline-md text-headline-md text-primary">
-                Jobs matching your search
-              </h2>
-              <p className="text-label-sm text-on-surface-variant">Refine the filters to find the right opportunity.</p>
-            </div>
 
             {jobs.length === 0 ? (
               <EmptyJobsState hasFilters={hasFilters} />

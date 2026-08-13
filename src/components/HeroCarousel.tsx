@@ -41,7 +41,7 @@ export default function HeroCarousel() {
           key={slide.src}
           src={slide.src}
           alt={slide.alt}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+          className={`absolute inset-0 w-full h-full object-cover object-[75%_center] md:object-center transition-opacity duration-1000 ease-in-out ${
             slideIndex === index ? "opacity-100" : "opacity-0"
           }`}
         />

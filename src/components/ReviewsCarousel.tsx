@@ -32,7 +32,7 @@ const REVIEWS: Review[] = [
     name: "Priya Nair",
     role: "Plant Director • Successfully Placed",
     image:
-      "https://res.cloudinary.com/dgz2omokl/image/upload/v1785029248/apart_iw2ejv.jpg",
+      "https://thumbs.dreamstime.com/b/portrait-smiling-male-warehouse-worker-showing-thumbs-up-camera-holds-smartphone-industrial-storage-stockroom-logistics-453529467.jpg",
   },
 ];
 

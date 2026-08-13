@@ -92,7 +92,7 @@ export function JobFilters({ sectors, children }: { sectors: SectorOption[]; chi
 
   return (
     <>
-      <section aria-label="Search jobs" className="mb-6 rounded-lg border border-outline-variant bg-surface-container-lowest p-4 shadow-sm md:p-5">
+      <section aria-label="Search jobs" className="mb-6 rounded-lg  p-4  md:p-5">
         <div className="mx-auto flex max-w-2xl flex-col gap-3 md:flex-row md:items-center">
           <label className="relative block flex-1">
             <span className="sr-only">Search by job title or keyword</span>
@@ -104,7 +104,7 @@ export function JobFilters({ sectors, children }: { sectors: SectorOption[]; chi
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="Job title or keyword"
-              className="h-12 w-full rounded-lg border border-outline-variant bg-surface pl-11 pr-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-12 w-full rounded-lg border border-outline-variant bg-white pl-11 pr-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
           <label className="relative block flex-1">
@@ -117,7 +117,7 @@ export function JobFilters({ sectors, children }: { sectors: SectorOption[]; chi
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Town, city or postcode"
-              className="h-12 w-full rounded-lg border border-outline-variant bg-surface pl-11 pr-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-12 w-full rounded-lg border border-outline-variant bg-white pl-11 pr-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
           <button
@@ -154,7 +154,8 @@ export function JobFilters({ sectors, children }: { sectors: SectorOption[]; chi
           filtersOpen
             ? "fixed inset-x-0 bottom-0 z-50 max-h-[88vh] overflow-y-auto rounded-t-2xl"
             : "hidden"
-        } border border-outline-variant bg-surface-container-lowest shadow-lg lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:rounded-lg lg:shadow-sm`}
+        } border border-outline-variant bg-surface-container-lowest shadow-lg lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:rounded-lg lg:shadow-sm filters-scrollbar`}
+        style={{ scrollbarWidth: "thin", scrollbarColor: "var(--color-secondary-container) transparent" }}
       >
         <div className="flex items-center justify-between border-b border-outline-variant p-5">
           <div>

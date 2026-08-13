@@ -1,6 +1,8 @@
+import Link from "next/link";
 import HeroCarousel from "@/components/HeroCarousel";
 import Reveal from "@/components/Reveal";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
+import HeroSearch from "./HeroSearch";
 
 const VACANCIES = [
   {
@@ -59,7 +61,6 @@ const SECTORS: Sector[] = [
     colSpan: "md:col-span-8",
     height: "h-[400px]",
     variant: "featured",
-    badge: "Featured Sector",
     tags: [
       "Warehouse Managers",
       "Inventory Controllers",
@@ -163,37 +164,13 @@ export default function HomePage() {
               provide executive-level recruitment solutions with precision and
               integrity.
             </p>
-            <div className="bg-white rounded p-2 flex flex-col md:flex-row gap-2 shadow-xl hero-fade-in" style={{ animationDelay: "200ms" }}>
-              <div className="flex-1 relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40">
-                  search
-                </span>
-                <input
-                  className="w-full pl-12 pr-4 py-4 bg-surface-container-low border-none rounded focus:ring-2 focus:ring-primary/10 text-on-surface"
-                  placeholder="Job Title or Keywords"
-                  type="text"
-                />
-              </div>
-              <div className="flex-1 relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40">
-                  location_on
-                </span>
-                <input
-                  className="w-full pl-12 pr-4 py-4 bg-surface-container-low border-none rounded focus:ring-2 focus:ring-primary/10 text-on-surface"
-                  placeholder="Location"
-                  type="text"
-                />
-              </div>
-              <button className="bg-primary text-white px-12 py-4 rounded font-bold hover:opacity-90 transition-all">
-                Search Jobs
-              </button>
-            </div>
+            <HeroSearch />
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <section className="py-xxl bg-white">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <Reveal className="relative">
               <img
@@ -225,15 +202,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative w-full py-20 overflow-hidden bg-white">
-        <div className="container mx-auto px-6 lg:px-8">
+      <section className="relative w-full pt-0 pb-xxl overflow-hidden bg-white">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
           <Reveal className="relative max-w-6xl mx-auto">
             <ReviewsCarousel />
           </Reveal>
         </div>
       </section>
 
-      <section className="relative h-[400px] flex items-center justify-center overflow-hidden">
+      <section className="relative overflow-hidden pt-xxl pb-xxl">
         <Reveal className="relative z-10 max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center">
           <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-4">
             Our Sectors
@@ -245,7 +222,7 @@ export default function HomePage() {
           </p>
         </Reveal>
       </section>
-      <section className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-xxl">
+      <section className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-0 pb-xxl">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           {SECTORS.map((sector, sectorIndex) => (
             <Reveal
@@ -285,11 +262,6 @@ export default function HomePage() {
                     sector.variant === "featured" ? "p-6 md:p-12" : "p-6"
                   }`}
                 >
-                  {sector.badge && (
-                    <span className="inline-block px-2 py-1 bg-secondary-container text-on-secondary-container text-caption font-bold rounded mb-2 uppercase tracking-widest">
-                      {sector.badge}
-                    </span>
-                  )}
                   <h2
                     className={
                       sector.variant === "featured"
@@ -343,18 +315,18 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-       <section className="py-xxl">
+      <section className="pt-0 pb-xxl">
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-12">
             <h2 className="text-headline-lg font-headline-lg text-primary">
               Featured Opportunities
             </h2>
-            <a
+            <Link
               className="text-primary font-bold border-b-2 border-primary pb-1 w-fit"
               href="/jobs"
             >
               View All Openings
-            </a>
+            </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
             {VACANCIES.map((job, jobIndex) => (
@@ -401,7 +373,7 @@ export default function HomePage() {
 
 
       {/* What Sets Us Apart */}
-      <section className="py-xxl bg-primary text-white">
+      <section className="pt-0 pb-xxl bg-primary text-white">
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <Reveal>
@@ -436,7 +408,7 @@ export default function HomePage() {
                   className="w-full h-full bg-cover bg-center"
                   style={{
                     backgroundImage:
-                      "url('https://res.cloudinary.com/dgz2omokl/image/upload/v1785029248/apart_iw2ejv.jpg')",
+                      "url('https://res.cloudinary.com/uhfrtle0/image/upload/v1786584926/sets_us_apart.webp')",
                   }}
                 />
               </div>
@@ -446,14 +418,14 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-xxl relative bg-surface-bright overflow-hidden">
+      <section className="pt-xxl pb-xxl relative bg-surface-bright overflow-hidden">
         <Reveal className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center relative z-10">
           <h2 className="text-display-lg-mobile md:text-display-lg font-bold text-primary mb-4">
             Scale Your Future
           </h2>
           <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-12">
             Whether you&apos;re looking to build an elite team or take the next
-            step in your professional career, Huge Requirements is your
+            step in your professional career, Huge Requirements Limited is your
             strategic partner.
           </p>
           <div className="flex flex-col md:flex-row justify-center gap-4">
@@ -463,12 +435,12 @@ export default function HomePage() {
             >
               I&apos;m Hiring Talent
             </a>
-            <a
+            <Link
               href="/jobs"
               className="border-2 border-primary text-primary px-12 py-6 rounded text-body-lg font-bold hover:bg-primary/5 hover:scale-105 transition-all"
             >
               I&apos;m Finding a Job
-            </a>
+            </Link>
           </div>
         </Reveal>
       </section>
