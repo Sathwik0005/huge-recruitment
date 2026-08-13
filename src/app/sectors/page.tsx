@@ -16,9 +16,9 @@ interface SectorRowData {
   description: string;
   image: string;
   alt: string;
-  href: string;
   icon: string;
   tags: string[];
+  highlights: string[];
 }
 
 const SECTOR_ROWS: SectorRowData[] = [
@@ -31,9 +31,14 @@ const SECTOR_ROWS: SectorRowData[] = [
     image:
       "https://res.cloudinary.com/dgz2omokl/image/upload/v1785158972/istockphoto-1125121546-2048x2048_ja5lnf.jpg",
     alt: "A professional warehouse facility",
-    href: "/jobs?sector=WAREHOUSING",
     icon: "inventory_2",
     tags: ["Warehouse Managers", "Inventory Controllers", "Fulfillment Specialists"],
+    highlights: [
+      "Same-week deployment for urgent warehouse shifts",
+      "Fully vetted, safety-certified operatives",
+      "Coverage across day, night and weekend patterns",
+      "A dedicated account manager for every site",
+    ],
   },
   {
     slug: "manufacturing",
@@ -44,9 +49,14 @@ const SECTOR_ROWS: SectorRowData[] = [
     image:
       "https://media.istockphoto.com/id/2188581107/photo/worker-in-protective-gear-welding-metal-in-an-industrial-factory-setting-with-sparks-flying.jpg?s=2048x2048&w=is&k=20&c=BqLt67Fsb0H0ThXyNuFjylTrJw3D4hfCqpyYiuSEEBU=",
     alt: "Manufacturing components",
-    href: "/jobs?sector=MANUFACTURING",
     icon: "precision_manufacturing",
     tags: ["Production Engineers", "Quality Assurance", "CNC Technicians"],
+    highlights: [
+      "Technical vetting for precision engineering roles",
+      "Access to certified CNC and QA specialists",
+      "Support across contract and permanent placements",
+      "Compliance-first candidate screening",
+    ],
   },
   {
     slug: "distribution",
@@ -57,9 +67,14 @@ const SECTOR_ROWS: SectorRowData[] = [
     image:
       "https://media.istockphoto.com/id/2091314722/photo/aerial-view-rows-of-trucks-driving-in-harbor-with-trailers.jpg?s=2048x2048&w=is&k=20&c=IJhAgon8QnHs9Hl24q2riGKCt6B3JY-ZhVmg92LXqwk=",
     alt: "Distribution center",
-    href: "/jobs?sector=DISTRIBUTION",
     icon: "local_shipping",
     tags: ["Fleet Leads", "Supply Chain", "Route Planners"],
+    highlights: [
+      "Nationwide network of logistics and transport talent",
+      "Certified HGV and fleet management specialists",
+      "Rapid response for peak-season demand",
+      "End-to-end supply chain coverage",
+    ],
   },
   {
     slug: "automotive",
@@ -70,9 +85,14 @@ const SECTOR_ROWS: SectorRowData[] = [
     image:
       "https://media.istockphoto.com/id/1320950379/photo/3d-render-of-a-car-on-robotic-welding-line.jpg?s=2048x2048&w=is&k=20&c=lk5rIAzBqjs47kCacA9UNJ4-w4cS11UwIG_KL-jEqOs=",
     alt: "Automotive research facility",
-    href: "/jobs?sector=AUTOMOTIVE",
     icon: "directions_car",
     tags: ["R&D Engineers", "Assembly Technicians", "Plant Leadership"],
+    highlights: [
+      "Specialists across R&D, assembly and plant leadership",
+      "Deep understanding of automotive compliance standards",
+      "Access to niche engineering talent pools",
+      "Support for OEM and Tier 1 supplier requirements",
+    ],
   },
   {
     slug: "production",
@@ -83,9 +103,14 @@ const SECTOR_ROWS: SectorRowData[] = [
     image:
       "https://media.istockphoto.com/id/1204069369/photo/group-of-students-in-an-engineering-class-looking-at-the-teacher.jpg?s=2048x2048&w=is&k=20&c=32sby6950eelHjZ1yjICb4_h9k8X227r7Cs8vwFR8xs=",
     alt: "Production environment",
-    href: "/jobs?sector=PRODUCTION",
     icon: "factory",
     tags: ["Line Management", "Technical Operators", "Process Improvement"],
+    highlights: [
+      "Skilled line operatives ready for rapid deployment",
+      "Process improvement and lean manufacturing expertise",
+      "Flexible staffing for fluctuating production demand",
+      "Rigorous safety and quality standards",
+    ],
   },
 ];
 
@@ -130,9 +155,9 @@ export default function SectorsPage() {
             description={sector.description}
             image={sector.image}
             alt={sector.alt}
-            href={sector.href}
             icon={sector.icon}
             tags={sector.tags}
+            highlights={sector.highlights}
             reverse={index % 2 === 1}
             bgClassName={index % 2 === 0 ? "bg-surface-container-low" : "bg-surface-container-lowest"}
           />

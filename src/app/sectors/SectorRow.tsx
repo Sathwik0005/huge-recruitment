@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 interface SectorRowProps {
@@ -11,9 +10,9 @@ interface SectorRowProps {
   description: string;
   image: string;
   alt: string;
-  href: string;
   icon: string;
   tags: string[];
+  highlights: string[];
   reverse?: boolean;
   bgClassName: string;
 }
@@ -26,9 +25,9 @@ export default function SectorRow({
   description,
   image,
   alt,
-  href,
   icon,
   tags,
+  highlights,
   reverse = false,
   bgClassName,
 }: SectorRowProps) {
@@ -139,17 +138,20 @@ export default function SectorRow({
             </div>
           )}
 
-          <div className="relative pt-4">
-            <Link
-              href={href}
-              className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container transition-colors duration-200 group"
-            >
-              Explore Sector
-              <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">
-                arrow_forward
-              </span>
-            </Link>
-          </div>
+          {highlights.length > 0 && (
+            <ul className="relative space-y-3 pt-2">
+              {highlights.map((point) => (
+                <li key={point} className="flex items-start gap-3">
+                  <span
+                    className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${iconRingClass}`}
+                  >
+                    <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                  </span>
+                  <span className="font-body-md text-body-md text-on-surface-variant">{point}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="relative flex-1 w-full">
