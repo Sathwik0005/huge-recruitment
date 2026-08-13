@@ -5,6 +5,16 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
   }),
+  usePathname: vi.fn(() => "/admin"),
+  useRouter: vi.fn(() => ({ push: vi.fn(), refresh: vi.fn() })),
+}));
+
+vi.mock("firebase/auth", () => ({
+  signOut: vi.fn(),
+}));
+
+vi.mock("@/firebase/config", () => ({
+  auth: {},
 }));
 
 vi.mock("@/lib/require-admin-session", () => ({
@@ -64,10 +74,11 @@ describe("/admin layout auth gate", () => {
     const jsx = await AdminLayout({ children: <div data-testid="admin-child">Content</div> });
     render(jsx);
 
-    expect(screen.getByRole("navigation", { name: /admin navigation/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Jobs" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Applications" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sectors" })).toBeInTheDocument();
+    expect(screen.getAllByRole("navigation", { name: /admin navigation/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Dashboard" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Candidates" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Jobs" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Analytics" }).length).toBeGreaterThan(0);
     expect(screen.getByTestId("admin-child")).toBeInTheDocument();
   });
 });

@@ -60,6 +60,13 @@ html {
   --color-employer-hero-end: #001b3b;
   --color-employer-accent: #b0d3ef;
   --color-employer-on-accent: #001b3b;
+
+  /* Admin panel status badges (candidates/jobs/dashboard). Danger aliases
+     the existing --color-error rather than defining a near-duplicate red. */
+  --color-status-success: #1b8354;
+  --color-status-warning: #b26a00;
+  --color-status-info: #3b6ea5;
+  --color-status-danger: var(--color-error);
 }
 
 @theme inline {
@@ -116,6 +123,11 @@ html {
   --color-employer-accent: var(--color-employer-accent);
   --color-employer-on-accent: var(--color-employer-on-accent);
 
+  --color-status-success: var(--color-status-success);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-info: var(--color-status-info);
+  --color-status-danger: var(--color-status-danger);
+
   --font-sans: var(--font-hanken-grotesk);
 
   --radius-sm: 0.25rem;
@@ -132,6 +144,7 @@ html {
   --spacing-margin-desktop: 32px;
   --spacing-stack-lg: 64px;
   --spacing-xxl: 96px;
+  --spacing-admin-sidebar-w: 260px;
 
   --text-display-lg: 48px;
   --text-display-lg--line-height: 56px;

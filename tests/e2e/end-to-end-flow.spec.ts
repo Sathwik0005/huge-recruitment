@@ -65,7 +65,7 @@ test.describe("End-to-end: create -> publish -> apply -> review", () => {
       await expect(page.getByText("Application received")).toBeVisible({ timeout: 15_000 });
 
       // 4. Admin reviews it.
-      await adminPage.goto("/admin/applications");
+      await adminPage.goto("/admin/candidates");
       const applicationRow = adminPage.locator("tr", { hasText: jobTitle });
       await expect(applicationRow.getByText("Full Flow Candidate")).toBeVisible({ timeout: 10_000 });
 

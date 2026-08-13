@@ -13,7 +13,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
   if (session.status !== "ok") redirect(session.status === "forbidden" ? "/" : "/login");
 
   const { id } = await params;
-  const [job, sectors] = await Promise.all([
+  const [job, sectors, clients] = await Promise.all([
     prisma.job.findUnique({
       where: { id },
       include: {
@@ -25,6 +25,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
       },
     }),
     prisma.sector.findMany({ orderBy: { label: "asc" } }),
+    prisma.client.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!job) notFound();
@@ -32,6 +33,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
   const initialValues: JobEditorInitialValues = {
     title: job.title,
     sectorId: job.sectorId,
+    clientId: job.clientId ?? "",
     employmentType: job.employmentType,
     overview: job.overview,
     townOrCity: job.townOrCity,
@@ -71,7 +73,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-6">
       <h1 className="text-headline-lg text-primary">Edit job</h1>
-      <JobEditor mode="edit" jobId={job.id} sectors={sectors} initialValues={initialValues} />
+      <JobEditor mode="edit" jobId={job.id} sectors={sectors} clients={clients} initialValues={initialValues} />
     </div>
   );
 }

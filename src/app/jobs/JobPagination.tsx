@@ -1,17 +1,21 @@
-function hrefForPage(searchParams: URLSearchParams, page: number): string {
+function hrefForPage(basePath: string, searchParams: URLSearchParams, page: number): string {
   const next = new URLSearchParams(searchParams);
   next.set("page", String(page));
-  return `/jobs?${next.toString()}`;
+  return `${basePath}?${next.toString()}`;
 }
 
 export function JobPagination({
   page,
   pageCount,
   searchParams,
+  basePath = "/jobs",
+  label = "Jobs pagination",
 }: {
   page: number;
   pageCount: number;
   searchParams: Record<string, string | undefined>;
+  basePath?: string;
+  label?: string;
 }) {
   if (pageCount <= 1) return null;
 
@@ -22,9 +26,9 @@ export function JobPagination({
   const pages = Array.from({ length: pageCount }, (_, index) => index + 1);
 
   return (
-    <nav aria-label="Jobs pagination" className="mt-8 flex items-center justify-center gap-2">
+    <nav aria-label={label} className="mt-8 flex items-center justify-center gap-2">
       <a
-        href={page > 1 ? hrefForPage(params, page - 1) : undefined}
+        href={page > 1 ? hrefForPage(basePath, params, page - 1) : undefined}
         aria-disabled={page <= 1}
         className={`flex size-11 items-center justify-center rounded-lg border border-outline-variant text-primary transition hover:border-primary ${page <= 1 ? "pointer-events-none opacity-40" : ""}`}
       >
@@ -37,7 +41,7 @@ export function JobPagination({
       {pages.map((pageNumber) => (
         <a
           key={pageNumber}
-          href={hrefForPage(params, pageNumber)}
+          href={hrefForPage(basePath, params, pageNumber)}
           aria-current={page === pageNumber ? "page" : undefined}
           className={
             page === pageNumber
@@ -50,7 +54,7 @@ export function JobPagination({
       ))}
 
       <a
-        href={page < pageCount ? hrefForPage(params, page + 1) : undefined}
+        href={page < pageCount ? hrefForPage(basePath, params, page + 1) : undefined}
         aria-disabled={page >= pageCount}
         className={`flex size-11 items-center justify-center rounded-lg border border-outline-variant text-primary transition hover:border-primary ${page >= pageCount ? "pointer-events-none opacity-40" : ""}`}
       >

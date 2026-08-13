@@ -13,7 +13,6 @@ loadEnv({ path: path.resolve(__dirname, "../../../.env.local") });
 
 import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { prisma } from "../../../src/lib/prisma";
 
 const SESSION_MAX_AGE_MS = 60 * 60 * 24 * 5 * 1000;
 
@@ -30,6 +29,7 @@ function getAdminApp() {
 }
 
 async function create(outFile: string) {
+  const { prisma } = await import("../../../src/lib/prisma");
   const auth = getAuth(getAdminApp());
   const runId = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
   const email = `e2e+admin-${runId}@example.test`;
@@ -72,6 +72,7 @@ async function create(outFile: string) {
 }
 
 async function cleanup(firebaseUid: string, userId: string) {
+  const { prisma } = await import("../../../src/lib/prisma");
   const auth = getAuth(getAdminApp());
   await Promise.allSettled([auth.deleteUser(firebaseUid), prisma.user.delete({ where: { id: userId } })]);
 }
@@ -86,6 +87,7 @@ const [, , mode, arg1, arg2] = process.argv;
   } else {
     throw new Error(`Unknown mode: ${mode}`);
   }
+  const { prisma } = await import("../../../src/lib/prisma");
   await prisma.$disconnect();
 })().catch((error) => {
   console.error(error);

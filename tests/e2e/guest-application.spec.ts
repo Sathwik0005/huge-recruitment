@@ -72,8 +72,8 @@ test.describe("Guest application", () => {
       await expect(page.getByText("Application received")).toBeVisible({ timeout: 15_000 });
       await expect(page.getByText(/^APP-/)).toBeVisible({ timeout: 5_000 });
 
-      // Confirm it shows up in the admin applications list, for this job.
-      await adminPage.goto("/admin/applications");
+      // Confirm it shows up in the admin candidates list, for this job.
+      await adminPage.goto("/admin/candidates");
       const applicationRow = adminPage.locator("tr", { hasText: jobTitle });
       await expect(applicationRow.getByText("E2E Candidate")).toBeVisible({ timeout: 10_000 });
 
