@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hanken_Grotesk } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import "./globals.css";
 
 const hankenGrotesk = Hanken_Grotesk({
@@ -24,9 +25,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col font-sans">
-        <Header />
-        <div className="flex-1 flex flex-col pt-20">{children}</div>
-        <Footer />
+        <SiteChrome header={<Header />} footer={<Footer />}>
+          {children}
+        </SiteChrome>
       </body>
     </html>
   );

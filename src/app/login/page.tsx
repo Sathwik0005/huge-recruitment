@@ -7,7 +7,7 @@ export default async function LoginPage() {
   if (session) redirect("/");
 
   return (
-    <main className="flex-grow flex items-center justify-center py-4 px-gutter">
+    <main className="flex-1 flex items-center justify-center py-4 px-gutter">
       <div className="w-full max-w-[440px]">
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-[0_4px_20px_-2px_rgba(2,36,72,0.08)]">
           <div className="mb-6 text-center">

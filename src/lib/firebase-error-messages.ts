@@ -11,6 +11,9 @@ const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
   "auth/cancelled-popup-request": "Google sign-in was cancelled.",
   "auth/account-exists-with-different-credential":
     "An account with this email already exists using a different sign-in method.",
+  "auth/unauthorized-domain":
+    "Google sign-in isn't enabled for this domain yet. Please contact support.",
+  "auth/popup-blocked": "Your browser blocked the Google sign-in popup. Please allow popups and try again.",
 };
 
 const DEFAULT_MESSAGE = "Something went wrong. Please try again.";
