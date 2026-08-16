@@ -26,12 +26,13 @@ vi.mock("@/lib/blob", () => ({
 
 vi.mock("@/lib/email", () => ({
   sendAdminApplicationNotification: vi.fn(),
+  sendCandidateApplicationConfirmation: vi.fn(),
 }));
 
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { verifyUploadedCv, deleteCvBlob } from "@/lib/blob";
-import { sendAdminApplicationNotification } from "@/lib/email";
+import { sendAdminApplicationNotification, sendCandidateApplicationConfirmation } from "@/lib/email";
 import { POST } from "./route";
 
 const mockCheckRateLimit = vi.mocked(checkRateLimit);
@@ -42,6 +43,7 @@ const mockJobApplicationCreate = vi.mocked(prisma.jobApplication.create);
 const mockVerifyUploadedCv = vi.mocked(verifyUploadedCv);
 const mockDeleteCvBlob = vi.mocked(deleteCvBlob);
 const mockSendNotification = vi.mocked(sendAdminApplicationNotification);
+const mockSendConfirmation = vi.mocked(sendCandidateApplicationConfirmation);
 
 const VALID_BODY = {
   jobId: "job-1",
@@ -110,6 +112,7 @@ describe("POST /api/applications", () => {
     const data = await response.json();
     expect(data.publicReference).toBe("APP-TEST123");
     expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    expect(mockSendConfirmation).toHaveBeenCalledTimes(1);
   });
 
   it("rejects submission to a job that is not PUBLISHED, re-checked inside the transaction", async () => {
@@ -135,6 +138,7 @@ describe("POST /api/applications", () => {
     expect(data.publicReference).toBe("APP-EXISTING");
     expect(mockJobApplicationCreate).not.toHaveBeenCalled();
     expect(mockSendNotification).not.toHaveBeenCalled();
+    expect(mockSendConfirmation).not.toHaveBeenCalled();
   });
 
   it("returns a success response to the client even when the notification email fails, and the application is still persisted", async () => {

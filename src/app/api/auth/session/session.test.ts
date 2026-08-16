@@ -16,14 +16,20 @@ vi.mock("@/lib/mint-session", () => ({
   mintSession: vi.fn(),
 }));
 
+vi.mock("@/lib/welcome-email", () => ({
+  sendWelcomeEmailOnce: vi.fn(),
+}));
+
 import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { mintSession } from "@/lib/mint-session";
+import { sendWelcomeEmailOnce } from "@/lib/welcome-email";
 import { POST } from "./route";
 
 const mockVerifyIdToken = vi.mocked(verifyIdToken);
 const mockFindUnique = vi.mocked(prisma.user.findUnique);
 const mockMintSession = vi.mocked(mintSession);
+const mockSendWelcomeEmailOnce = vi.mocked(sendWelcomeEmailOnce);
 
 function makeRequest(body: unknown) {
   return new Request("http://localhost/api/auth/session", {
@@ -36,6 +42,7 @@ function makeRequest(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockMintSession.mockResolvedValue(undefined);
+  mockSendWelcomeEmailOnce.mockResolvedValue(undefined);
 });
 
 describe("POST /api/auth/session", () => {
@@ -71,6 +78,7 @@ describe("POST /api/auth/session", () => {
     expect(json.error).toBeTruthy();
     expect(mockFindUnique).not.toHaveBeenCalled();
     expect(mockMintSession).not.toHaveBeenCalled();
+    expect(mockSendWelcomeEmailOnce).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the token is verified but no matching Prisma User exists", async () => {
@@ -83,9 +91,10 @@ describe("POST /api/auth/session", () => {
     expect(response.status).toBe(404);
     expect(json.error).toBeTruthy();
     expect(mockMintSession).not.toHaveBeenCalled();
+    expect(mockSendWelcomeEmailOnce).not.toHaveBeenCalled();
   });
 
-  it("re-mints the session cookie and returns 200 with the user when verified and a matching User exists", async () => {
+  it("re-mints the session cookie, sends the welcome email once, and returns 200 with the user when verified and a matching User exists", async () => {
     mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email_verified: true } as never);
     const user = { id: "1", firebaseUid: "uid-1", firstName: "Ann", lastName: "Lee", email: "a@b.com" };
     mockFindUnique.mockResolvedValue(user as never);
@@ -96,6 +105,7 @@ describe("POST /api/auth/session", () => {
     expect(response.status).toBe(200);
     expect(json).toEqual({ user });
     expect(mockMintSession).toHaveBeenCalledWith("fresh-token");
+    expect(mockSendWelcomeEmailOnce).toHaveBeenCalledWith(user);
   });
 
   it("scopes the User lookup by the verified token's uid, not any client-supplied identifier", async () => {

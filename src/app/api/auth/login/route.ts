@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { mintSession } from "@/lib/mint-session";
+import { sendWelcomeEmailOnce } from "@/lib/welcome-email";
 import { Prisma } from "@/generated/prisma/client";
 
 export async function POST(request: Request) {
@@ -61,6 +62,21 @@ export async function POST(request: Request) {
       }
       throw error;
     }
+
+    await sendWelcomeEmailOnce(user);
+  }
+
+  // Only a verified identity may ever receive a session: Google sign-ins
+  // already required email_verified === true above (isGoogleSignIn), so this
+  // only ever blocks the password-flow path, uniformly for new and existing
+  // users. The unverified user is still signed in at the Firebase-client
+  // level (the ID token itself is valid) — just refused a server session
+  // until they verify, so the client can safely route them to /verify-email.
+  if (!isGoogleSignIn && !decoded.email_verified) {
+    return NextResponse.json(
+      { error: "Please verify your email before signing in.", code: "email-not-verified" },
+      { status: 403 },
+    );
   }
 
   await mintSession(idToken);

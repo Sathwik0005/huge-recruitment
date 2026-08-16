@@ -2,7 +2,14 @@ import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-let ratelimiters: { applications: Ratelimit; cvUpload: Ratelimit } | null = null;
+type RateLimitKind =
+  | "applications"
+  | "cvUpload"
+  | "verificationEmail"
+  | "forgotPassword"
+  | "verificationComplete";
+
+let ratelimiters: Record<RateLimitKind, Ratelimit> | null = null;
 
 function getRatelimiters() {
   if (ratelimiters) return ratelimiters;
@@ -23,17 +30,34 @@ function getRatelimiters() {
       limiter: Ratelimit.slidingWindow(10, "10 m"),
       prefix: "ratelimit:cv-upload",
     }),
+    verificationEmail: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(3, "10 m"),
+      prefix: "ratelimit:verification-email",
+    }),
+    forgotPassword: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "10 m"),
+      prefix: "ratelimit:forgot-password",
+    }),
+    verificationComplete: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "10 m"),
+      prefix: "ratelimit:verification-complete",
+    }),
   };
   return ratelimiters;
 }
 
 /**
- * Upstash-backed rate limiting for the guest-facing application/CV-upload
- * endpoints, keyed by client IP. Fails open (allows the request) if Upstash
- * isn't configured, so local development without Upstash credentials still
- * works — but logs loudly so a missing production config isn't silent.
+ * Upstash-backed rate limiting for guest-facing endpoints (application/CV
+ * upload, forgot-password, verification-complete — all IP-keyed) and
+ * identity-keyed auth endpoints (verification-email resend — keyed by the
+ * already-verified uid). Fails open (allows the request) if Upstash isn't
+ * configured, so local development without Upstash credentials still works —
+ * but logs loudly so a missing production config isn't silent.
  */
-export async function checkRateLimit(kind: "applications" | "cvUpload", identifier: string): Promise<boolean> {
+export async function checkRateLimit(kind: RateLimitKind, identifier: string): Promise<boolean> {
   const limiters = getRatelimiters();
   if (!limiters) {
     console.error("Upstash rate limiting is not configured; allowing request without a limit");

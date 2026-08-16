@@ -12,7 +12,7 @@ interface Review {
 const REVIEWS: Review[] = [
   {
     quote:
-      "Huge Requirements found me a role that actually matched my skills within two weeks. The whole process felt personal, not transactional.",
+      "Huge Requirements Limited found me a role that actually matched my skills within two weeks. The whole process felt personal, not transactional.",
     name: "John Smith",
     role: "Software Engineer • Successfully Placed",
     image:

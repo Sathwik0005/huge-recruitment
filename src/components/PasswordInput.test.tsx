@@ -20,8 +20,20 @@ describe("PasswordInput", () => {
     expect(input).toHaveAttribute("type", "password");
   });
 
-  it("does not steal tab focus (toggle button is not in the tab order)", () => {
+  it("keeps the visibility toggle in the natural tab order (keyboard-accessible, no tabIndex override)", () => {
     render(<PasswordInput aria-label="Password" value="" onChange={() => {}} />);
-    expect(screen.getByRole("button", { name: "Show password" })).toHaveAttribute("tabIndex", "-1");
+    expect(screen.getByRole("button", { name: "Show password" })).not.toHaveAttribute("tabIndex");
+  });
+
+  it("can be toggled via the keyboard (Enter) without a mouse", async () => {
+    const user = userEvent.setup();
+    render(<PasswordInput aria-label="Password" value="secret123" onChange={() => {}} />);
+
+    await user.tab();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Show password" })).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "text");
   });
 });

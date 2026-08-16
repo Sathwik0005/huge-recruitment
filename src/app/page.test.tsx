@@ -1,71 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({
-  redirect: vi.fn((url: string) => {
-    throw new Error(`REDIRECT:${url}`);
-  }),
+vi.mock("@/lib/job-dto", () => ({
+  getFeaturedJobs: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@/lib/require-verified-session", () => ({
-  requireVerifiedSession: vi.fn(),
-}));
-
-vi.mock("@/components/LogoutButton", () => ({
-  LogoutButton: () => <button type="button">Sign Out</button>,
-}));
-
-import { requireVerifiedSession } from "@/lib/require-verified-session";
 import Home from "./page";
 
-const mockRequireVerifiedSession = vi.mocked(requireVerifiedSession);
-
-beforeEach(() => {
-  vi.clearAllMocks();
-});
-
-describe("/ (protected home page)", () => {
-  it("redirects to /login when unauthenticated", async () => {
-    mockRequireVerifiedSession.mockResolvedValue({ status: "unauthenticated" });
-
-    await expect(Home()).rejects.toThrow("REDIRECT:/login");
-  });
-
-  it("redirects to /login when there is a verified session but no matching DB user", async () => {
-    mockRequireVerifiedSession.mockResolvedValue({ status: "no-db-user" });
-
-    await expect(Home()).rejects.toThrow("REDIRECT:/login");
-  });
-
-  it("redirects to /verify-email when the session is unverified (server-side enforcement, decision #2)", async () => {
-    mockRequireVerifiedSession.mockResolvedValue({ status: "unverified" });
-
-    await expect(Home()).rejects.toThrow("REDIRECT:/verify-email");
-  });
-
-  it("renders the authenticated landing page with the user's name, email, role, and status when verified", async () => {
-    mockRequireVerifiedSession.mockResolvedValue({
-      status: "ok",
-      user: {
-        id: "1",
-        firebaseUid: "uid-1",
-        firstName: "Ann",
-        lastName: "Lee",
-        email: "ann@example.com",
-        role: "USER",
-        status: "ACTIVE",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as never,
-    });
-
-    const jsx = await Home();
-    render(jsx);
-
-    expect(screen.getByText(/welcome, ann/i)).toBeInTheDocument();
-    expect(screen.getByText("ann@example.com")).toBeInTheDocument();
-    expect(screen.getByText("USER")).toBeInTheDocument();
-    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
+describe("/ (public homepage)", () => {
+  it("resolves with no session/auth guard involved — `/` is intentionally public", async () => {
+    // No @/lib/session, @/lib/require-verified-session, or any auth module is
+    // mocked above. If HomePage ever started depending on one, this test
+    // would fail with an unmocked-module error rather than silently passing,
+    // which is the point: it asserts the absence of an auth gate on `/`, not
+    // just that the page happens to render. (Rendered DOM output is covered
+    // by other homepage-specific tests, out of scope for this auth-focused
+    // check — a full render here would additionally require mocking the App
+    // Router context that HomePage's client children rely on.)
+    await expect(Home()).resolves.toBeDefined();
   });
 });

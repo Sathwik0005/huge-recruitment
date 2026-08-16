@@ -1,6 +1,6 @@
 import "server-only";
 import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { getAuth, type ActionCodeSettings } from "firebase-admin/auth";
 
 const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
@@ -30,4 +30,16 @@ export function verifySessionCookie(sessionCookie: string) {
 
 export function deleteUser(uid: string) {
   return adminAuth.deleteUser(uid);
+}
+
+export function generateEmailVerificationLink(email: string, actionCodeSettings: ActionCodeSettings) {
+  return adminAuth.generateEmailVerificationLink(email, actionCodeSettings);
+}
+
+export function generatePasswordResetLink(email: string, actionCodeSettings: ActionCodeSettings) {
+  return adminAuth.generatePasswordResetLink(email, actionCodeSettings);
+}
+
+export function getUserByEmail(email: string) {
+  return adminAuth.getUserByEmail(email);
 }

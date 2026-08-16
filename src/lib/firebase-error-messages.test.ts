@@ -17,6 +17,10 @@ describe("getFirebaseErrorMessage", () => {
       "auth/account-exists-with-different-credential",
       "An account with this email already exists using a different sign-in method.",
     ],
+    ["auth/expired-action-code", "This link has expired. Please request a new one."],
+    ["auth/invalid-action-code", "This link is invalid or has already been used. Please request a new one."],
+    ["auth/user-disabled", "This account has been disabled. Please contact support."],
+    ["auth/requires-recent-login", "For your security, please sign in again before continuing."],
   ])("maps %s to a user-facing message", (code, expected) => {
     expect(getFirebaseErrorMessage({ code })).toBe(expected);
   });
