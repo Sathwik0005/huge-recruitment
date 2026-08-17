@@ -41,8 +41,17 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    let cancelled = false;
 
+    // No "cancelled" flag here deliberately: startedRef above already
+    // guarantees this effect's async work runs at most once per real mount.
+    // A cancelled-on-cleanup flag combined with that guard is actively
+    // harmful in development, where React Strict Mode synchronously mounts,
+    // cleans up, and remounts once — the cleanup would flip `cancelled` on
+    // the one closure that's actually still running (the remount is skipped
+    // by startedRef), silently swallowing the final redirect even though
+    // verification and session creation both genuinely succeeded. React 18+
+    // safely no-ops state updates after a real unmount, so nothing here
+    // needs it.
     async function completeOnDifferentBrowser(email: string | undefined) {
       if (email) {
         // Best-effort, once-only welcome email — doesn't block the redirect.
@@ -55,7 +64,7 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
       // No local Firebase session exists here, so there's nothing to mint a
       // secure session from — land on "/" without creating a false session;
       // proxy.ts will route them to /login if the page turns out to need one.
-      if (!cancelled) router.replace("/");
+      router.replace("/");
     }
 
     async function mintSessionAndGoHome(currentUser: User) {
@@ -66,10 +75,8 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
         body: JSON.stringify({ idToken }),
       });
       if (!response.ok) throw new Error("session mint failed");
-      if (!cancelled) {
-        router.replace("/");
-        router.refresh();
-      }
+      router.replace("/");
+      router.refresh();
     }
 
     // checkActionCode/applyActionCode reject an already-consumed code with
@@ -96,10 +103,8 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
           // failed, so we genuinely can't confirm success.
         }
       }
-      if (!cancelled) {
-        setErrorMessage(getFirebaseErrorMessage(err));
-        setState("error");
-      }
+      setErrorMessage(getFirebaseErrorMessage(err));
+      setState("error");
     }
 
     async function run() {
@@ -143,9 +148,6 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
     }
 
     run();
-    return () => {
-      cancelled = true;
-    };
   }, [oobCode, router]);
 
   return (
