@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyIdToken, generateEmailVerificationLink } from "@/firebase/admin";
 import { sendVerificationEmail } from "@/lib/auth-email";
+import { toAppActionLink } from "@/lib/firebase-action-link";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -35,10 +36,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const link = await generateEmailVerificationLink(decoded.email!, {
+    const firebaseLink = await generateEmailVerificationLink(decoded.email!, {
       url: `${appUrl}/verify-email`,
       handleCodeInApp: true,
     });
+    const link = toAppActionLink(firebaseLink, "verifyEmail");
     await sendVerificationEmail({ email: decoded.email!, link });
   } catch (error) {
     console.error("Failed to generate/send verification email for uid:", decoded.uid, {

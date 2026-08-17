@@ -34,8 +34,11 @@ function makeRequest(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
+  vi.stubEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "huge-recruitment.firebaseapp.com");
   mockCheckRateLimit.mockResolvedValue(true);
-  mockGenerateLink.mockResolvedValue("https://example.test/verify-email?mode=verifyEmail&oobCode=abc");
+  mockGenerateLink.mockResolvedValue(
+    "https://huge-recruitment.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=abc&apiKey=fake-key",
+  );
   mockSendVerificationEmail.mockResolvedValue(undefined);
 });
 
@@ -65,7 +68,7 @@ describe("POST /api/auth/send-verification-email", () => {
     expect(mockGenerateLink).not.toHaveBeenCalled();
   });
 
-  it("happy path: rate-limits by uid, generates a handleCodeInApp link at /verify-email, sends the email, returns 200", async () => {
+  it("happy path: rate-limits by uid, generates a handleCodeInApp link at /verify-email, sends the email with the transformed /auth/action link, returns 200", async () => {
     mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
 
     const response = await POST(makeRequest({ idToken: "token" }));
@@ -80,8 +83,18 @@ describe("POST /api/auth/send-verification-email", () => {
     });
     expect(mockSendVerificationEmail).toHaveBeenCalledWith({
       email: "a@b.com",
-      link: "https://example.test/verify-email?mode=verifyEmail&oobCode=abc",
+      link: "https://example.test/auth/action?mode=verifyEmail&oobCode=abc&apiKey=fake-key",
     });
+  });
+
+  it("surfaces a real error when the generated link doesn't match the expected Firebase action-link shape", async () => {
+    mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
+    mockGenerateLink.mockResolvedValue("https://example.test/verify-email?mode=verifyEmail&oobCode=abc");
+
+    const response = await POST(makeRequest({ idToken: "token" }));
+
+    expect(response.status).toBe(500);
+    expect(mockSendVerificationEmail).not.toHaveBeenCalled();
   });
 
   it("surfaces a real error (not a fake success) when link generation fails — the user cannot proceed without this email", async () => {

@@ -33,7 +33,11 @@ function makeRequest(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
+  vi.stubEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "huge-recruitment.firebaseapp.com");
   mockCheckRateLimit.mockResolvedValue(true);
+  mockGenerateLink.mockResolvedValue(
+    "https://huge-recruitment.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=abc&apiKey=fake-key",
+  );
 });
 
 describe("POST /api/auth/forgot-password", () => {
@@ -43,7 +47,6 @@ describe("POST /api/auth/forgot-password", () => {
   });
 
   it("anti-enumeration: an existing account and a nonexistent account get byte-identical 200 responses", async () => {
-    mockGenerateLink.mockResolvedValueOnce("https://example.test/reset-password?oobCode=abc");
     const realResponse = await POST(makeRequest({ email: "real@example.com" }));
     const realJson = await realResponse.json();
 
@@ -55,9 +58,7 @@ describe("POST /api/auth/forgot-password", () => {
     expect(realJson).toEqual(fakeJson);
   });
 
-  it("sends the branded reset email only when the account genuinely exists", async () => {
-    mockGenerateLink.mockResolvedValue("https://example.test/reset-password?oobCode=abc");
-
+  it("sends the branded reset email, using the transformed /auth/action link, only when the account genuinely exists", async () => {
     await POST(makeRequest({ email: "real@example.com" }));
 
     expect(mockGenerateLink).toHaveBeenCalledWith("real@example.com", {
@@ -66,7 +67,7 @@ describe("POST /api/auth/forgot-password", () => {
     });
     expect(mockSendEmail).toHaveBeenCalledWith({
       email: "real@example.com",
-      link: "https://example.test/reset-password?oobCode=abc",
+      link: "https://example.test/auth/action?mode=resetPassword&oobCode=abc&apiKey=fake-key",
     });
   });
 
