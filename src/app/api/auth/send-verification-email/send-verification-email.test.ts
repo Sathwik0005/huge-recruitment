@@ -39,7 +39,7 @@ beforeEach(() => {
   mockGenerateLink.mockResolvedValue(
     "https://huge-recruitment.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=abc&apiKey=fake-key",
   );
-  mockSendVerificationEmail.mockResolvedValue(undefined);
+  mockSendVerificationEmail.mockResolvedValue(true);
 });
 
 describe("POST /api/auth/send-verification-email", () => {
@@ -95,6 +95,17 @@ describe("POST /api/auth/send-verification-email", () => {
 
     expect(response.status).toBe(500);
     expect(mockSendVerificationEmail).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a real error — not a false 200 — when Resend rejects the send without throwing (a non-throwing { data, error } result)", async () => {
+    mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
+    mockSendVerificationEmail.mockResolvedValue(false);
+
+    const response = await POST(makeRequest({ idToken: "token" }));
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json.error).toBeTruthy();
   });
 
   it("surfaces a real error (not a fake success) when link generation fails — the user cannot proceed without this email", async () => {

@@ -38,7 +38,13 @@ export async function POST(request: Request) {
         handleCodeInApp: true,
       });
       const link = toAppActionLink(firebaseLink, "resetPassword");
-      await sendPasswordResetLinkEmail({ email, link });
+      const sent = await sendPasswordResetLinkEmail({ email, link });
+      if (!sent) {
+        // Still returns the same generic response below (anti-enumeration) —
+        // this is logged so a systemic Resend failure is visible, without
+        // revealing send outcomes to the caller.
+        console.error("forgot-password email was not accepted by the email provider");
+      }
     } catch (error) {
       // Includes auth/user-not-found for a non-existent account — swallowed
       // deliberately, same generic response either way.

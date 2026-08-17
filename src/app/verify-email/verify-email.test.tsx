@@ -26,8 +26,9 @@ vi.mock("firebase/auth", () => ({
 
 const authMock = vi.hoisted(
   () =>
-    ({ currentUser: null }) as {
+    ({ currentUser: null, authStateReady: vi.fn().mockResolvedValue(undefined) }) as {
       currentUser: { email: string; emailVerified?: boolean; getIdToken: ReturnType<typeof vi.fn> } | null;
+      authStateReady: ReturnType<typeof vi.fn>;
     },
 );
 
@@ -205,7 +206,7 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
-  it("shows an error state when applyActionCode itself rejects an already-used or malformed code", async () => {
+  it("shows an error state when applyActionCode itself rejects an already-used or malformed code, and there is no signed-in user to recover from", async () => {
     searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "already-used" });
     mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
     mockApplyActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
@@ -217,5 +218,64 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
     ).toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalled();
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("regression: a second/duplicate applyActionCode() call that fails with auth/invalid-action-code does NOT show 'invalid link' when this browser's Firebase user is already verified — it mints a session and redirects home instead (proves the 'invalid link but logged in after refresh' contradiction is fixed)", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "already-used" });
+    mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
+    mockApplyActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
+    const fakeUser = {
+      email: "ann@example.com",
+      emailVerified: true,
+      getIdToken: vi.fn().mockResolvedValue("fresh-token"),
+    };
+    authMock.currentUser = fakeUser;
+    mockReload.mockResolvedValue(undefined);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ user: {} }) });
+
+    render(<VerifyEmailPage />);
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/"));
+    expect(refreshMock).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/auth/session",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ idToken: "fresh-token" }) }),
+    );
+    expect(screen.queryByText("This link isn't valid")).not.toBeInTheDocument();
+  });
+
+  it("a second/duplicate applyActionCode() failure still shows the real error when the signed-in user is NOT actually verified", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "already-used" });
+    mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
+    mockApplyActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
+    const fakeUser = {
+      email: "ann@example.com",
+      emailVerified: false,
+      getIdToken: vi.fn(),
+    };
+    authMock.currentUser = fakeUser;
+    mockReload.mockResolvedValue(undefined);
+
+    render(<VerifyEmailPage />);
+
+    expect(
+      await screen.findByText("This link is invalid or has already been used. Please request a new one."),
+    ).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("does not issue a second applyActionCode() call for the same mounted instance (duplicate-effect guard)", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "abc123" });
+    mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
+    mockApplyActionCode.mockResolvedValue(undefined);
+    mockReload.mockResolvedValue(undefined);
+    const fakeUser = { email: "ann@example.com", getIdToken: vi.fn().mockResolvedValue("fresh-token") };
+    authMock.currentUser = fakeUser;
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ user: {} }) });
+
+    render(<VerifyEmailPage />);
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/"));
+    expect(mockApplyActionCode).toHaveBeenCalledTimes(1);
   });
 });

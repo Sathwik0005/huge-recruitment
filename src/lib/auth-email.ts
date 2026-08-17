@@ -11,7 +11,8 @@ const COLOR_ON_BACKGROUND = "#121c2a";
 const COLOR_MUTED = "#43474e";
 const COLOR_BORDER = "#c4c6cf";
 
-type SendResult = void;
+/** true only when Resend's API accepted the send request. */
+type SendResult = boolean;
 
 interface RenderInput {
   heading: string;
@@ -112,19 +113,34 @@ async function send(
   const config = getResendConfig();
   if (!config) {
     console.error(`Resend is not configured; skipping ${kind} email`);
-    return;
+    return false;
   }
 
   const resend = new Resend(config.apiKey);
   try {
-    await resend.emails.send(
+    // The Resend SDK reports API-level rejections (invalid/unverified
+    // sender domain, suppressed recipient, quota, etc.) as a non-null
+    // `error` field on a resolved result — it does NOT throw for those.
+    // Only network/transport failures throw. Checking `error` here is what
+    // makes an accepted-vs-rejected send actually distinguishable.
+    const { error } = await resend.emails.send(
       { from: config.from, to, subject, html, text },
       idempotencyKey ? { idempotencyKey } : undefined,
     );
+    if (error) {
+      console.error(`Resend rejected the ${kind} email`, {
+        errorName: error.name,
+        errorMessage: error.message,
+      });
+      return false;
+    }
+    return true;
   } catch (error) {
     console.error(`Failed to send ${kind} email`, {
       errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
+    return false;
   }
 }
 
@@ -140,7 +156,7 @@ export async function sendVerificationEmail({
   const bodyText = `Thanks for registering with Huge Requirements Limited. Please confirm this is your email address to activate your account.`;
   const securityNote = "This link will expire soon and can only be used once. If you didn't create an account, you can safely ignore this email.";
 
-  await send("verification", {
+  return send("verification", {
     to: email,
     subject: "Verify your email address",
     html: renderAuthEmailHtml({ heading, bodyHtml, bodyText, ctaLabel: "Verify email address", ctaUrl: link, securityNote }),
@@ -162,7 +178,7 @@ export async function sendWelcomeEmail({
   const bodyText = "Your account is now verified and ready to go. Browse live roles across warehousing, manufacturing, distribution, automotive and production, and apply in a few clicks.";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
-  await send("welcome", {
+  return send("welcome", {
     to: email,
     subject: "Welcome to Huge Requirements Limited",
     html: renderAuthEmailHtml({ heading, bodyHtml, bodyText, ctaLabel: appUrl ? "Browse jobs" : undefined, ctaUrl: appUrl ? `${appUrl}/jobs` : undefined }),
@@ -183,7 +199,7 @@ export async function sendPasswordResetLinkEmail({
   const bodyText = "We received a request to reset the password for this account. Click the link below to choose a new password.";
   const securityNote = "This link will expire soon and can only be used once. If you didn't request a password reset, you can safely ignore this email — your password will not be changed.";
 
-  await send("password reset", {
+  return send("password reset", {
     to: email,
     subject: "Reset your password",
     html: renderAuthEmailHtml({ heading, bodyHtml, bodyText, ctaLabel: "Reset password", ctaUrl: link, securityNote }),

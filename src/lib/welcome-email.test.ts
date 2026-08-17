@@ -23,7 +23,7 @@ const USER = { id: "user-1", email: "ann@example.com", firstName: "Ann" };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockSendWelcomeEmail.mockResolvedValue(undefined);
+  mockSendWelcomeEmail.mockResolvedValue(true);
 });
 
 describe("sendWelcomeEmailOnce", () => {
@@ -56,5 +56,14 @@ describe("sendWelcomeEmailOnce", () => {
 
     await expect(sendWelcomeEmailOnce(USER)).resolves.toBeUndefined();
     expect(mockSendWelcomeEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not throw and logs when sendWelcomeEmail reports the provider rejected the send", async () => {
+    mockUpdateMany.mockResolvedValue({ count: 1 } as never);
+    mockSendWelcomeEmail.mockResolvedValue(false);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(sendWelcomeEmailOnce(USER)).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("not accepted"), "user-1");
   });
 });

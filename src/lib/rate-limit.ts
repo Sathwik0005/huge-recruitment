@@ -64,8 +64,20 @@ export async function checkRateLimit(kind: RateLimitKind, identifier: string): P
     return true;
   }
 
-  const { success } = await limiters[kind].limit(identifier);
-  return success;
+  try {
+    const { success } = await limiters[kind].limit(identifier);
+    return success;
+  } catch (error) {
+    // Fails open, same as "not configured": a transient Upstash outage must
+    // never surface to the caller as an uncaught 500 — every route calling
+    // this treats a thrown error identically to a hard crash, which is far
+    // worse than temporarily skipping the limit.
+    console.error(`Rate limit check failed for "${kind}"; allowing request without a limit`, {
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    return true;
+  }
 }
 
 /**

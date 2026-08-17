@@ -41,7 +41,14 @@ export async function POST(request: Request) {
       handleCodeInApp: true,
     });
     const link = toAppActionLink(firebaseLink, "verifyEmail");
-    await sendVerificationEmail({ email: decoded.email!, link });
+    const sent = await sendVerificationEmail({ email: decoded.email!, link });
+    if (!sent) {
+      console.error("Verification email was not accepted by the email provider for uid:", decoded.uid);
+      return NextResponse.json(
+        { error: "Something went wrong sending the verification email. Please try again." },
+        { status: 500 },
+      );
+    }
   } catch (error) {
     console.error("Failed to generate/send verification email for uid:", decoded.uid, {
       errorClass: error instanceof Error ? error.constructor.name : typeof error,

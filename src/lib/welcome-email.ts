@@ -32,5 +32,8 @@ export async function sendWelcomeEmailOnce(user: WelcomeEmailUser): Promise<void
 
   if (claimed !== 1) return;
 
-  await sendWelcomeEmail({ email: user.email, firstName: user.firstName, idempotencyKey: `welcome-${user.id}` });
+  const sent = await sendWelcomeEmail({ email: user.email, firstName: user.firstName, idempotencyKey: `welcome-${user.id}` });
+  if (!sent) {
+    console.error("Welcome email was not accepted by the email provider for user:", user.id);
+  }
 }

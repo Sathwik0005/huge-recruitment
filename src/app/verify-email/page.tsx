@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { applyActionCode, checkActionCode, onAuthStateChanged, reload, type User } from "firebase/auth";
 import { auth } from "@/firebase/config";
@@ -32,8 +32,15 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
   const router = useRouter();
   const [state, setState] = useState<"processing" | "error">("processing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Guards against a second run() within the same mounted instance (e.g. an
+  // effect re-fire) issuing a second applyActionCode() for the same oobCode —
+  // that second call would fail with auth/invalid-action-code purely because
+  // the first call already consumed it, which is not a real invalid link.
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
     let cancelled = false;
 
     async function completeOnDifferentBrowser(email: string | undefined) {
@@ -51,26 +58,66 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
       if (!cancelled) router.replace("/");
     }
 
+    async function mintSessionAndGoHome(currentUser: User) {
+      const idToken = await currentUser.getIdToken(true);
+      const response = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!response.ok) throw new Error("session mint failed");
+      if (!cancelled) {
+        router.replace("/");
+        router.refresh();
+      }
+    }
+
+    // checkActionCode/applyActionCode reject an already-consumed code with
+    // the same auth/invalid-action-code error as a genuinely bad one. If
+    // this exact browser already has a signed-in Firebase user who turns
+    // out to already be verified, the code was consumed by an earlier
+    // application (a duplicate click, a re-opened email, a link-scanning
+    // proxy) that succeeded — not a failure. Confirming that from Firebase's
+    // own record (reload) and completing the session, rather than showing a
+    // false "invalid link" error, is what resolves the contradiction where
+    // the page said "invalid" but the user was already logged in on refresh.
+    async function handleActionCodeFailure(err: unknown, expectedEmail: string | undefined) {
+      await auth.authStateReady();
+      const currentUser = auth.currentUser;
+      if (currentUser && (!expectedEmail || currentUser.email === expectedEmail)) {
+        try {
+          await reload(currentUser);
+          if (currentUser.emailVerified) {
+            await mintSessionAndGoHome(currentUser);
+            return;
+          }
+        } catch {
+          // Fall through to the real error below — reload/session itself
+          // failed, so we genuinely can't confirm success.
+        }
+      }
+      if (!cancelled) {
+        setErrorMessage(getFirebaseErrorMessage(err));
+        setState("error");
+      }
+    }
+
     async function run() {
+      await auth.authStateReady();
+
       let email: string | undefined;
       try {
         const info = await checkActionCode(auth, oobCode);
         email = info.data.email ?? undefined;
       } catch (err) {
-        if (!cancelled) {
-          setErrorMessage(getFirebaseErrorMessage(err));
-          setState("error");
-        }
+        await handleActionCodeFailure(err, undefined);
         return;
       }
 
       try {
         await applyActionCode(auth, oobCode);
       } catch (err) {
-        if (!cancelled) {
-          setErrorMessage(getFirebaseErrorMessage(err));
-          setState("error");
-        }
+        await handleActionCodeFailure(err, email);
         return;
       }
 
@@ -82,22 +129,13 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
           // Sync the client SDK's cached user with the verification we just
           // applied before reading emailVerified/minting a token from it.
           await reload(currentUser);
-          const idToken = await currentUser.getIdToken(true);
-          const response = await fetch("/api/auth/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken }),
-          });
-          if (!response.ok) throw new Error("session mint failed");
-          if (!cancelled) {
-            router.replace("/");
-            router.refresh();
-          }
+          await mintSessionAndGoHome(currentUser);
           return;
         } catch {
           // Verification itself already succeeded even though minting a
           // session here failed — fall back to the safe different-browser
-          // path below rather than leaving the user stuck.
+          // path below rather than leaving the user stuck, and never
+          // relabel this as an invalid link.
         }
       }
 

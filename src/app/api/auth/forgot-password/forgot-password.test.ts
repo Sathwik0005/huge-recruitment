@@ -38,6 +38,7 @@ beforeEach(() => {
   mockGenerateLink.mockResolvedValue(
     "https://huge-recruitment.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=abc&apiKey=fake-key",
   );
+  mockSendEmail.mockResolvedValue(true);
 });
 
 describe("POST /api/auth/forgot-password", () => {
@@ -94,5 +95,15 @@ describe("POST /api/auth/forgot-password", () => {
   it("rate-limits by client IP, not by email (caller is unauthenticated)", async () => {
     await POST(makeRequest({ email: "real@example.com" }));
     expect(mockCheckRateLimit).toHaveBeenCalledWith("forgotPassword", "1.2.3.4");
+  });
+
+  it("still returns the same generic 200 (anti-enumeration) when Resend rejects the send without throwing", async () => {
+    mockSendEmail.mockResolvedValue(false);
+
+    const response = await POST(makeRequest({ email: "real@example.com" }));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ ok: true });
   });
 });

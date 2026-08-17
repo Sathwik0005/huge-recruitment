@@ -30,19 +30,32 @@ describe("sendVerificationEmail", () => {
     expect(payload.text).toContain("https://example.test/verify-email?oobCode=abc");
   });
 
-  it("does not throw and skips sending when Resend is not configured", async () => {
+  it("does not throw and skips sending when Resend is not configured, and reports failure", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
     await expect(
       sendVerificationEmail({ email: "ann@example.com", link: "https://example.test/verify-email" }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("does not throw when the Resend API call itself fails", async () => {
+  it("does not throw when the Resend API call itself fails, and reports failure", async () => {
     mockSend.mockRejectedValue(new Error("Resend is down"));
     await expect(
       sendVerificationEmail({ email: "ann@example.com", link: "https://example.test/verify-email" }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
+  });
+
+  it("does not throw when Resend returns a non-throwing { data, error } rejection, and reports failure", async () => {
+    mockSend.mockResolvedValue({ data: null, error: { name: "validation_error", message: "Invalid recipient" } });
+    await expect(
+      sendVerificationEmail({ email: "ann@example.com", link: "https://example.test/verify-email" }),
+    ).resolves.toBe(false);
+  });
+
+  it("reports success when Resend accepts the send", async () => {
+    await expect(
+      sendVerificationEmail({ email: "ann@example.com", link: "https://example.test/verify-email" }),
+    ).resolves.toBe(true);
   });
 });
 
@@ -63,9 +76,9 @@ describe("sendWelcomeEmail", () => {
     expect(options).toEqual({ idempotencyKey: "welcome-user-1" });
   });
 
-  it("does not throw and skips sending when Resend is not configured", async () => {
+  it("does not throw and skips sending when Resend is not configured, and reports failure", async () => {
     vi.stubEnv("RESEND_FROM_EMAIL", "");
-    await expect(sendWelcomeEmail({ email: "ann@example.com", firstName: "Ann" })).resolves.toBeUndefined();
+    await expect(sendWelcomeEmail({ email: "ann@example.com", firstName: "Ann" })).resolves.toBe(false);
     expect(mockSend).not.toHaveBeenCalled();
   });
 });
@@ -79,10 +92,17 @@ describe("sendPasswordResetLinkEmail", () => {
     expect(payload.html).toContain("https://example.test/reset-password?oobCode=xyz");
   });
 
-  it("does not throw when the Resend API call itself fails", async () => {
+  it("does not throw when the Resend API call itself fails, and reports failure", async () => {
     mockSend.mockRejectedValue(new Error("Resend is down"));
     await expect(
       sendPasswordResetLinkEmail({ email: "ann@example.com", link: "https://example.test/reset-password" }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
+  });
+
+  it("does not throw when Resend returns a non-throwing { data, error } rejection, and reports failure", async () => {
+    mockSend.mockResolvedValue({ data: null, error: { name: "validation_error", message: "Invalid recipient" } });
+    await expect(
+      sendPasswordResetLinkEmail({ email: "ann@example.com", link: "https://example.test/reset-password" }),
+    ).resolves.toBe(false);
   });
 });

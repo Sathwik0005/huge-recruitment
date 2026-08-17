@@ -2,7 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
 import { auth } from "@/firebase/config";
 import { validatePassword } from "@/lib/password";
 import { getFirebaseErrorMessage } from "@/lib/firebase-error-messages";
@@ -82,22 +87,52 @@ export function RegisterForm() {
 
     setSubmitting(true);
     try {
-      const existingMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (existingMethods.length > 0) {
-        if (existingMethods.includes("google.com") && !existingMethods.includes("password")) {
-          setErrors({
-            email: "This email is already registered with Google. Please continue with Google instead.",
-          });
-        } else {
-          setErrors({ email: "An account with this email already exists." });
+      let user;
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(credential.user, { displayName: `${firstName} ${lastName}` });
+        user = credential.user;
+      } catch (createError) {
+        const code = (createError as { code?: string } | null)?.code;
+        if (code !== "auth/email-already-in-use") throw createError;
+
+        // An account already exists for this email. This is either someone
+        // else's account, or it's this same person retrying after a partial
+        // failure earlier (Firebase account created, but the database row
+        // and/or verification email never completed). Signing in with the
+        // password they just typed distinguishes the two — only the actual
+        // owner's password succeeds, so this can never be used to probe
+        // whether an email is registered. (fetchSignInMethodsForEmail is
+        // deliberately not used as the gate here: Firebase's Email
+        // Enumeration Protection setting, on by default for newer projects,
+        // makes it always return an empty array regardless of whether the
+        // account exists, which would silently skip this recovery path.)
+        let signInCredential;
+        try {
+          signInCredential = await signInWithEmailAndPassword(auth, email, password);
+        } catch {
+          const methods = await fetchSignInMethodsForEmail(auth, email).catch(() => [] as string[]);
+          if (methods.includes("google.com") && !methods.includes("password")) {
+            setErrors({
+              email: "This email is already registered with Google. Please continue with Google instead.",
+            });
+          } else {
+            setErrors({ email: "An account with this email already exists." });
+          }
+          return;
         }
-        return;
+
+        if (signInCredential.user.emailVerified) {
+          // Fully registered and verified already — not a partial failure,
+          // just an existing account. Don't sign them in.
+          await auth.signOut();
+          setErrors({ email: "An account with this email already exists." });
+          return;
+        }
+        user = signInCredential.user;
       }
 
-      const credential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(credential.user, { displayName: `${firstName} ${lastName}` });
-
-      const idToken = await credential.user.getIdToken();
+      const idToken = await user.getIdToken();
       const response = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

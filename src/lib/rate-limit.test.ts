@@ -47,6 +47,14 @@ describe("checkRateLimit", () => {
     await expect(fresh.checkRateLimit("applications", "1.2.3.4")).resolves.toBe(true);
     expect(errorSpy).toHaveBeenCalled();
   });
+
+  it("fails open (allows) instead of throwing when Upstash itself errors mid-request (e.g. a network blip)", async () => {
+    mockLimit.mockRejectedValue(new Error("fetch failed"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(checkRateLimit("verificationEmail", "uid-1")).resolves.toBe(true);
+    expect(errorSpy).toHaveBeenCalled();
+  });
 });
 
 describe("getClientIdentifier", () => {
