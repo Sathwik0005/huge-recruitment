@@ -116,10 +116,13 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-[0_4px_20px_-2px_rgba(2,36,72,0.08)] text-center">
           {state === "processing" ? (
             <>
+              <div
+                role="status"
+                aria-live="polite"
+                className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-4 border-outline-variant border-t-primary"
+              />
               <h1 className="text-headline-lg text-primary mb-2">Verifying your email address</h1>
-              <p role="status" aria-live="polite" className="text-body-md text-secondary">
-                Please wait while we activate your account.
-              </p>
+              <p className="text-body-md text-secondary">Please wait while we activate your account.</p>
             </>
           ) : (
             <>
@@ -265,8 +268,15 @@ function CheckEmailState() {
             type="button"
             onClick={handleCheckVerified}
             disabled={checking}
-            className="w-full h-12 mt-4 border border-outline-variant text-primary text-body-md font-bold rounded-lg hover:bg-surface-container-low transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full h-12 mt-4 border border-outline-variant text-primary text-body-md font-bold rounded-lg hover:bg-surface-container-low transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
           >
+            {checking && (
+              <span
+                role="status"
+                aria-label="Checking"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-outline-variant border-t-primary"
+              />
+            )}
             {checking ? "Checking..." : "I've already verified"}
           </button>
         </div>

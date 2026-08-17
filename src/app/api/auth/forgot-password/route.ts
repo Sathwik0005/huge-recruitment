@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generatePasswordResetLink } from "@/firebase/admin";
 import { sendPasswordResetLinkEmail } from "@/lib/auth-email";
+import { toAppActionLink } from "@/lib/firebase-action-link";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 const GENERIC_RESPONSE = { ok: true } as const;
@@ -32,10 +33,11 @@ export async function POST(request: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) {
     try {
-      const link = await generatePasswordResetLink(email, {
+      const firebaseLink = await generatePasswordResetLink(email, {
         url: `${appUrl}/reset-password`,
         handleCodeInApp: true,
       });
+      const link = toAppActionLink(firebaseLink, "resetPassword");
       await sendPasswordResetLinkEmail({ email, link });
     } catch (error) {
       // Includes auth/user-not-found for a non-existent account — swallowed
