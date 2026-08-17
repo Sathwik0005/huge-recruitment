@@ -3,20 +3,22 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const pushMock = vi.fn();
+const refreshMock = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
 }));
 
 const mockFetchSignInMethodsForEmail = vi.fn();
 const mockCreateUserWithEmailAndPassword = vi.fn();
 const mockUpdateProfile = vi.fn();
-const mockSendEmailVerification = vi.fn();
+const mockSignInWithPopup = vi.fn();
 
 vi.mock("firebase/auth", () => ({
+  GoogleAuthProvider: vi.fn(),
   fetchSignInMethodsForEmail: (...args: unknown[]) => mockFetchSignInMethodsForEmail(...args),
   createUserWithEmailAndPassword: (...args: unknown[]) => mockCreateUserWithEmailAndPassword(...args),
   updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
-  sendEmailVerification: (...args: unknown[]) => mockSendEmailVerification(...args),
+  signInWithPopup: (...args: unknown[]) => mockSignInWithPopup(...args),
 }));
 
 vi.mock("@/firebase/config", () => ({
@@ -87,7 +89,7 @@ describe("RegisterForm", () => {
     expect(mockCreateUserWithEmailAndPassword).not.toHaveBeenCalled();
   });
 
-  it("blocks submission with a duplicate-email error when fetchSignInMethodsForEmail finds an existing account, without calling createUser", async () => {
+  it("blocks submission with a duplicate-email error when fetchSignInMethodsForEmail finds an existing password account, without calling createUser", async () => {
     mockFetchSignInMethodsForEmail.mockResolvedValue(["password"]);
     const user = userEvent.setup();
     render(<RegisterForm />);
@@ -99,12 +101,25 @@ describe("RegisterForm", () => {
     expect(mockCreateUserWithEmailAndPassword).not.toHaveBeenCalled();
   });
 
-  it("happy path: creates Firebase user, calls POST /api/users, sends verification email, and redirects to /verify-email", async () => {
+  it("shows a Google-specific message and directs to Google when the email is only registered via Google", async () => {
+    mockFetchSignInMethodsForEmail.mockResolvedValue(["google.com"]);
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    expect(
+      await screen.findByText(/already registered with google.*continue with google instead/i),
+    ).toBeInTheDocument();
+    expect(mockCreateUserWithEmailAndPassword).not.toHaveBeenCalled();
+  });
+
+  it("happy path: creates Firebase user, calls POST /api/users, requests a verification email via the server, and redirects to /verify-email", async () => {
     mockFetchSignInMethodsForEmail.mockResolvedValue([]);
     const fakeUser = { getIdToken: vi.fn().mockResolvedValue("id-token-123") };
     mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
     mockUpdateProfile.mockResolvedValue(undefined);
-    mockSendEmailVerification.mockResolvedValue(undefined);
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => ({ user: { id: "1" } }),
@@ -130,7 +145,13 @@ describe("RegisterForm", () => {
         body: JSON.stringify({ idToken: "id-token-123", firstName: "Ann", lastName: "Lee" }),
       }),
     );
-    expect(mockSendEmailVerification).toHaveBeenCalledWith(fakeUser);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/auth/send-verification-email",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ idToken: "id-token-123" }),
+      }),
+    );
   });
 
   it("shows the server's error and does not redirect when POST /api/users fails (e.g. 409 duplicate)", async () => {
@@ -150,7 +171,7 @@ describe("RegisterForm", () => {
 
     expect(await screen.findByText("An account with this email already exists.")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
-    expect(mockSendEmailVerification).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalledWith("/api/auth/send-verification-email", expect.anything());
   });
 
   it("shows a mapped Firebase error message when createUserWithEmailAndPassword throws", async () => {
@@ -163,6 +184,40 @@ describe("RegisterForm", () => {
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(await screen.findByText("An account with this email already exists.")).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("Google sign-in posts to /api/auth/login with provider 'google' and redirects to / (Firebase/Identity Platform auto-links same-email accounts for this project, so there is no separate password-confirmation step to test here)", async () => {
+    const fakeUser = { getIdToken: vi.fn().mockResolvedValue("google-id-token") };
+    mockSignInWithPopup.mockResolvedValue({ user: fakeUser });
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: { id: "1" } }),
+    });
+
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+    await user.click(screen.getByRole("button", { name: /continue with google/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
+    expect(refreshMock).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ idToken: "google-id-token", provider: "google" }),
+      }),
+    );
+  });
+
+  it("shows a mapped error message when the Google popup sign-in fails", async () => {
+    mockSignInWithPopup.mockRejectedValue({ code: "auth/popup-closed-by-user" });
+
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+    await user.click(screen.getByRole("button", { name: /continue with google/i }));
+
+    expect(await screen.findByText("Google sign-in was cancelled.")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
 });

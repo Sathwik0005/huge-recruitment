@@ -33,6 +33,9 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  verificationEmailSentAt DateTime?
+  welcomeEmailSentAt      DateTime?
+
   createdJobs Job[] @relation("JobCreatedBy")
   updatedJobs Job[] @relation("JobUpdatedBy")
 }

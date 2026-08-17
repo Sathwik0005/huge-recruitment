@@ -1,14 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/firebase/config";
-import { getFirebaseErrorMessage } from "@/lib/firebase-error-messages";
 
 const GENERIC_SUCCESS_MESSAGE =
-  "If an account exists for that email, we've sent a password reset link. Check your inbox.";
-
-const ANTI_ENUMERATION_CODES = new Set(["auth/user-not-found", "auth/invalid-credential"]);
+  "If an account exists for that email address, we've sent a password reset link. Please check your inbox and spam folder.";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -28,28 +23,39 @@ export function ForgotPasswordForm() {
 
     setSubmitting(true);
     try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccess(true);
-    } catch (err) {
-      const code = (err as { code?: string } | null)?.code;
-      if (code && ANTI_ENUMERATION_CODES.has(code)) {
-        setSuccess(true);
-      } else {
-        setError(getFirebaseErrorMessage(err));
-      }
+      // The server always responds the same way whether or not an account
+      // exists for this email — anti-enumeration is enforced there, so the
+      // client always shows the generic success state on any response
+      // (including a network failure) rather than distinguishing outcomes.
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      // Fall through to the same generic success state below.
     } finally {
       setSubmitting(false);
     }
+    setSuccess(true);
   }
 
   if (success) {
-    return <p className="text-body-md text-on-surface-variant text-center">{GENERIC_SUCCESS_MESSAGE}</p>;
+    return (
+      <p role="status" aria-live="polite" className="text-body-md text-on-surface-variant text-center">
+        {GENERIC_SUCCESS_MESSAGE}
+      </p>
+    );
   }
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit} noValidate>
       {error && (
-        <p className="text-label-md text-error bg-error-container text-on-error-container rounded-lg px-4 py-3">
+        <p
+          role="alert"
+          aria-live="assertive"
+          className="text-label-md text-error bg-error-container text-on-error-container rounded-lg px-4 py-3"
+        >
           {error}
         </p>
       )}
@@ -61,6 +67,7 @@ export function ForgotPasswordForm() {
         <input
           id="email"
           type="email"
+          autoComplete="email"
           placeholder="e.g. james.smith@corporate.com"
           className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
           value={email}
@@ -71,7 +78,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full h-12 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all disabled:opacity-60"
+        className="w-full h-12 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {submitting ? "Sending..." : "Send Reset Link"}
       </button>

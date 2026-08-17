@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import { generatePasswordResetLink } from "@/firebase/admin";
+import { sendPasswordResetLinkEmail } from "@/lib/auth-email";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+
+const GENERIC_RESPONSE = { ok: true } as const;
+
+/**
+ * Anti-enumeration: every branch (malformed email aside) returns the exact
+ * same 200 body, whether the account exists, doesn't exist, or the send
+ * itself failed. Only a missing/empty email field is treated differently,
+ * since that reveals nothing about account existence.
+ */
+export async function POST(request: Request) {
+  let body: { email?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  const { email } = body;
+  if (!email) {
+    return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  const allowed = await checkRateLimit("forgotPassword", getClientIdentifier(request));
+  if (!allowed) {
+    return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    try {
+      const link = await generatePasswordResetLink(email, {
+        url: `${appUrl}/reset-password`,
+        handleCodeInApp: true,
+      });
+      await sendPasswordResetLinkEmail({ email, link });
+    } catch (error) {
+      // Includes auth/user-not-found for a non-existent account — swallowed
+      // deliberately, same generic response either way.
+      console.error("forgot-password link generation/send failed", {
+        errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      });
+    }
+  } else {
+    console.error("NEXT_PUBLIC_APP_URL is not configured; cannot build a password-reset link");
+  }
+
+  return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
+}

@@ -2,24 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import {
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
-  linkWithCredential,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  updateProfile,
-  type AuthCredential,
-  type AuthError,
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail, updateProfile } from "firebase/auth";
 import { auth } from "@/firebase/config";
 import { validatePassword } from "@/lib/password";
 import { getFirebaseErrorMessage } from "@/lib/firebase-error-messages";
 import { PasswordInput } from "@/components/PasswordInput";
-
-type LinkPrompt = { email: string; credential: AuthCredential };
+import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,10 +31,6 @@ export function RegisterForm() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
-  const [googleSubmitting, setGoogleSubmitting] = useState(false);
-  const [linkPrompt, setLinkPrompt] = useState<LinkPrompt | null>(null);
-  const [linkPassword, setLinkPassword] = useState("");
-  const [linking, setLinking] = useState(false);
 
   async function postLogin(idToken: string) {
     const response = await fetch("/api/auth/login", {
@@ -65,64 +49,11 @@ export function RegisterForm() {
     router.refresh();
   }
 
-  async function handleGoogleSignIn() {
-    setErrors({});
-    setLinkPrompt(null);
-    setGoogleSubmitting(true);
-    try {
-      const credential = await signInWithPopup(auth, new GoogleAuthProvider());
-      const idToken = await credential.user.getIdToken();
-      await postLogin(idToken);
-    } catch (err) {
-      const code = (err as { code?: string } | null)?.code;
-      if (code === "auth/account-exists-with-different-credential") {
-        const pendingCredential = GoogleAuthProvider.credentialFromError(err as AuthError);
-        const linkEmail = (err as { customData?: { email?: string } } | null)?.customData?.email;
-        if (pendingCredential && linkEmail) {
-          setLinkPrompt({ email: linkEmail, credential: pendingCredential });
-        } else {
-          setErrors({ form: getFirebaseErrorMessage(err) });
-        }
-      } else {
-        setErrors({ form: getFirebaseErrorMessage(err) });
-      }
-    } finally {
-      setGoogleSubmitting(false);
-    }
-  }
-
-  async function handleLinkAccounts(event: FormEvent) {
-    event.preventDefault();
-    if (!linkPrompt) return;
-
-    setErrors({});
-    setLinking(true);
-    try {
-      let existing;
-      try {
-        existing = await signInWithEmailAndPassword(auth, linkPrompt.email, linkPassword);
-      } catch (err) {
-        setErrors({ form: getFirebaseErrorMessage(err) });
-        return;
-      }
-
-      try {
-        await linkWithCredential(existing.user, linkPrompt.credential);
-      } catch {
-        setErrors({
-          form: "Your password was correct, but we couldn't link your Google account right now. Please try again, or continue signing in with your password.",
-        });
-        return;
-      }
-
-      const idToken = await existing.user.getIdToken();
-      setLinkPrompt(null);
-      setLinkPassword("");
-      await postLogin(idToken);
-    } finally {
-      setLinking(false);
-    }
-  }
+  const { googleSubmitting, handleGoogleSignIn } = useGoogleSignIn({
+    onSuccess: postLogin,
+    clearError: () => setErrors({}),
+    setError: (message) => setErrors({ form: message }),
+  });
 
   function handlePasswordChange(value: string) {
     setPassword(value);
@@ -153,7 +84,13 @@ export function RegisterForm() {
     try {
       const existingMethods = await fetchSignInMethodsForEmail(auth, email);
       if (existingMethods.length > 0) {
-        setErrors({ email: "An account with this email already exists." });
+        if (existingMethods.includes("google.com") && !existingMethods.includes("password")) {
+          setErrors({
+            email: "This email is already registered with Google. Please continue with Google instead.",
+          });
+        } else {
+          setErrors({ email: "An account with this email already exists." });
+        }
         return;
       }
 
@@ -173,7 +110,21 @@ export function RegisterForm() {
         return;
       }
 
-      await sendEmailVerification(credential.user);
+      const verificationResponse = await fetch("/api/auth/send-verification-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!verificationResponse.ok) {
+        const data = await verificationResponse.json().catch(() => ({}));
+        setErrors({
+          form:
+            data.error ??
+            "Your account was created, but we couldn't send the verification email. You can request a new one from the next screen.",
+        });
+      }
+
       router.push("/verify-email");
     } catch (error) {
       setErrors({ form: getFirebaseErrorMessage(error) });
@@ -185,7 +136,11 @@ export function RegisterForm() {
   return (
     <div>
       {errors.form && (
-        <p className="mb-6 text-label-md text-error bg-error-container text-on-error-container rounded-lg px-4 py-3">
+        <p
+          role="alert"
+          aria-live="assertive"
+          className="mb-6 text-label-md text-error bg-error-container text-on-error-container rounded-lg px-4 py-3"
+        >
           {errors.form}
         </p>
       )}
@@ -194,7 +149,7 @@ export function RegisterForm() {
         type="button"
         onClick={handleGoogleSignIn}
         disabled={submitting || googleSubmitting}
-        className="w-full h-12 flex items-center justify-center gap-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-60"
+        className="w-full h-12 flex items-center justify-center gap-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
           <path
@@ -215,7 +170,7 @@ export function RegisterForm() {
           />
         </svg>
         <span className="text-label-md text-on-surface">
-          {googleSubmitting ? "Signing in..." : "Continue with Google"}
+          {googleSubmitting ? "Signing up..." : "Continue with Google"}
         </span>
       </button>
 
@@ -238,11 +193,12 @@ export function RegisterForm() {
           </label>
           <input
             id="firstName"
+            autoComplete="given-name"
             className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
           />
-          {errors.firstName && <p className="text-label-sm text-error">{errors.firstName}</p>}
+          {errors.firstName && <p role="alert" aria-live="assertive" className="text-label-sm text-error">{errors.firstName}</p>}
         </div>
         <div className="space-y-1">
           <label className="text-label-md text-on-surface-variant block" htmlFor="lastName">
@@ -250,11 +206,12 @@ export function RegisterForm() {
           </label>
           <input
             id="lastName"
+            autoComplete="family-name"
             className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
-          {errors.lastName && <p className="text-label-sm text-error">{errors.lastName}</p>}
+          {errors.lastName && <p role="alert" aria-live="assertive" className="text-label-sm text-error">{errors.lastName}</p>}
         </div>
       </div>
 
@@ -265,12 +222,13 @@ export function RegisterForm() {
         <input
           id="email"
           type="email"
+          autoComplete="email"
           placeholder="e.g. james.smith@corporate.com"
           className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        {errors.email && <p className="text-label-sm text-error">{errors.email}</p>}
+        {errors.email && <p role="alert" aria-live="assertive" className="text-label-sm text-error">{errors.email}</p>}
       </div>
 
       <div className="space-y-1">
@@ -279,12 +237,13 @@ export function RegisterForm() {
         </label>
         <PasswordInput
           id="password"
+          autoComplete="new-password"
           placeholder="••••••••"
           className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
           value={password}
           onChange={(e) => handlePasswordChange(e.target.value)}
         />
-        {errors.password && <p className="text-label-sm text-error">{errors.password}</p>}
+        {errors.password && <p role="alert" aria-live="assertive" className="text-label-sm text-error">{errors.password}</p>}
       </div>
 
       <div className="space-y-1">
@@ -293,19 +252,20 @@ export function RegisterForm() {
         </label>
         <PasswordInput
           id="confirmPassword"
+          autoComplete="new-password"
           placeholder="••••••••"
           className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
-        {errors.confirmPassword && <p className="text-label-sm text-error">{errors.confirmPassword}</p>}
+        {errors.confirmPassword && <p role="alert" aria-live="assertive" className="text-label-sm text-error">{errors.confirmPassword}</p>}
       </div>
 
       <div className="space-y-1">
-        <label className="flex items-start gap-2 text-label-md text-on-surface-variant">
+        <label className="flex items-start gap-2 text-label-md text-on-surface-variant cursor-pointer">
           <input
             type="checkbox"
-            className="mt-1"
+            className="mt-1 cursor-pointer"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
@@ -321,57 +281,17 @@ export function RegisterForm() {
             .
           </span>
         </label>
-        {errors.terms && <p className="text-label-sm text-error">{errors.terms}</p>}
+        {errors.terms && <p role="alert" aria-live="assertive" className="text-label-sm text-error">{errors.terms}</p>}
       </div>
 
       <button
         type="submit"
         disabled={submitting || googleSubmitting}
-        className="w-full h-12 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all disabled:opacity-60"
+        className="w-full h-12 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {submitting ? "Creating account..." : "Create Account"}
       </button>
       </form>
-
-      {linkPrompt && (
-        <form
-          className="mt-6 p-4 space-y-3 bg-surface-container-low border border-outline-variant rounded-lg"
-          onSubmit={handleLinkAccounts}
-        >
-          <p className="text-label-md text-on-surface">
-            An account already exists for <span className="font-bold">{linkPrompt.email}</span> using a
-            password. Enter that password to link your Google sign-in to it.
-          </p>
-          <PasswordInput
-            id="linkPassword"
-            aria-label="Password for account linking"
-            placeholder="••••••••"
-            className="w-full h-12 px-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
-            value={linkPassword}
-            onChange={(e) => setLinkPassword(e.target.value)}
-          />
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={linking || !linkPassword}
-              className="h-12 px-6 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all disabled:opacity-60"
-            >
-              {linking ? "Linking..." : "Link Google Account"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLinkPrompt(null);
-                setLinkPassword("");
-              }}
-              disabled={linking}
-              className="h-12 px-6 border border-outline-variant text-primary text-body-md font-bold rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-60"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
     </div>
   );
 }

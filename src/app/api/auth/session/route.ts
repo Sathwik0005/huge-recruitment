@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { mintSession } from "@/lib/mint-session";
+import { sendWelcomeEmailOnce } from "@/lib/welcome-email";
 
 export async function POST(request: Request) {
   let body: { idToken?: string };
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
   }
 
   await mintSession(idToken);
+  await sendWelcomeEmailOnce(user);
 
   return NextResponse.json({ user }, { status: 200 });
 }

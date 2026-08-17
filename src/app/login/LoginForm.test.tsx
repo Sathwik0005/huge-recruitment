@@ -8,27 +8,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: refreshMock }),
 }));
 
-const { mockSignInWithEmailAndPassword, mockSignInWithPopup, mockLinkWithCredential, mockCredentialFromError } =
-  vi.hoisted(() => ({
-    mockSignInWithEmailAndPassword: vi.fn(),
-    mockSignInWithPopup: vi.fn(),
-    mockLinkWithCredential: vi.fn(),
-    mockCredentialFromError: vi.fn(),
-  }));
+const mockSignInWithEmailAndPassword = vi.fn();
+const mockSignInWithPopup = vi.fn();
 
-vi.mock("firebase/auth", () => {
-  const GoogleAuthProviderMock = vi.fn() as unknown as { new (): unknown } & {
-    credentialFromError: typeof mockCredentialFromError;
-  };
-  (GoogleAuthProviderMock as unknown as { credentialFromError: unknown }).credentialFromError =
-    mockCredentialFromError;
-  return {
-    GoogleAuthProvider: GoogleAuthProviderMock,
-    linkWithCredential: (...args: unknown[]) => mockLinkWithCredential(...args),
-    signInWithEmailAndPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
-    signInWithPopup: (...args: unknown[]) => mockSignInWithPopup(...args),
-  };
-});
+vi.mock("firebase/auth", () => ({
+  GoogleAuthProvider: vi.fn(),
+  signInWithEmailAndPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
+  signInWithPopup: (...args: unknown[]) => mockSignInWithPopup(...args),
+}));
 
 vi.mock("@/firebase/config", () => ({
   auth: {},
@@ -77,6 +64,24 @@ describe("LoginForm", () => {
     );
   });
 
+  it("routes to /verify-email (not an inline error) when the server refuses a session for an unverified account", async () => {
+    const fakeUser = { getIdToken: vi.fn().mockResolvedValue("id-token-abc") };
+    mockSignInWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "Please verify your email before signing in.", code: "email-not-verified" }),
+    });
+
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("Email Address"), "ann@example.com");
+    await user.type(screen.getByLabelText("Password"), "whatever-password");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/verify-email"));
+    expect(screen.queryByText("Please verify your email before signing in.")).not.toBeInTheDocument();
+  });
+
   it("shows a generic invalid-credentials message and does not redirect on failed password sign-in", async () => {
     mockSignInWithEmailAndPassword.mockRejectedValue({ code: "auth/invalid-credential" });
 
@@ -110,7 +115,7 @@ describe("LoginForm", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("Google flow happy path: signs in via popup, POSTs /api/auth/login with provider 'google', redirects to /", async () => {
+  it("Google flow happy path: signs in via popup, POSTs /api/auth/login with provider 'google', redirects to / (Firebase/Identity Platform auto-links same-email accounts for this project, so there is no separate password-confirmation step to test here)", async () => {
     const fakeUser = { getIdToken: vi.fn().mockResolvedValue("google-id-token") };
     mockSignInWithPopup.mockResolvedValue({ user: fakeUser });
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -149,147 +154,5 @@ describe("LoginForm", () => {
       "href",
       "/forgot-password",
     );
-  });
-
-  describe("account linking (Google sign-in colliding with an existing password account)", () => {
-    const fakeGoogleCredential = { providerId: "google.com" };
-
-    it("shows a link-accounts prompt when Google sign-in fails with account-exists-with-different-credential", async () => {
-      mockSignInWithPopup.mockRejectedValue({
-        code: "auth/account-exists-with-different-credential",
-        customData: { email: "ann@example.com" },
-      });
-      mockCredentialFromError.mockReturnValue(fakeGoogleCredential);
-
-      const user = userEvent.setup();
-      render(<LoginForm />);
-      await user.click(screen.getByRole("button", { name: /continue with google/i }));
-
-      expect(
-        await screen.findByText(/an account already exists for/i),
-      ).toBeInTheDocument();
-      expect(screen.getByText("ann@example.com")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /link google account/i })).toBeInTheDocument();
-    });
-
-    it("falls back to the generic mapped error if the pending credential/email can't be recovered", async () => {
-      mockSignInWithPopup.mockRejectedValue({
-        code: "auth/account-exists-with-different-credential",
-        customData: {},
-      });
-      mockCredentialFromError.mockReturnValue(null);
-
-      const user = userEvent.setup();
-      render(<LoginForm />);
-      await user.click(screen.getByRole("button", { name: /continue with google/i }));
-
-      expect(
-        await screen.findByText("An account with this email already exists using a different sign-in method."),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /link google account/i })).not.toBeInTheDocument();
-    });
-
-    it("links the pending Google credential to the existing password account and redirects to / on success", async () => {
-      mockSignInWithPopup.mockRejectedValue({
-        code: "auth/account-exists-with-different-credential",
-        customData: { email: "ann@example.com" },
-      });
-      mockCredentialFromError.mockReturnValue(fakeGoogleCredential);
-      const fakeUser = { getIdToken: vi.fn().mockResolvedValue("linked-id-token") };
-      mockSignInWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
-      mockLinkWithCredential.mockResolvedValue(undefined);
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-        ok: true,
-        json: async () => ({ user: { id: "1" } }),
-      });
-
-      const user = userEvent.setup();
-      render(<LoginForm />);
-      await user.click(screen.getByRole("button", { name: /continue with google/i }));
-      await screen.findByRole("button", { name: /link google account/i });
-
-      await user.type(screen.getByLabelText("Password for account linking"), "existing-password");
-      await user.click(screen.getByRole("button", { name: /link google account/i }));
-
-      await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
-      expect(mockSignInWithEmailAndPassword).toHaveBeenCalledWith(
-        expect.anything(),
-        "ann@example.com",
-        "existing-password",
-      );
-      expect(mockLinkWithCredential).toHaveBeenCalledWith(fakeUser, fakeGoogleCredential);
-      expect(global.fetch).toHaveBeenCalledWith(
-        "/api/auth/login",
-        expect.objectContaining({
-          method: "POST",
-          body: JSON.stringify({ idToken: "linked-id-token", provider: "password" }),
-        }),
-      );
-    });
-
-    it("shows an error and keeps the prompt open when the password entered for linking is wrong", async () => {
-      mockSignInWithPopup.mockRejectedValue({
-        code: "auth/account-exists-with-different-credential",
-        customData: { email: "ann@example.com" },
-      });
-      mockCredentialFromError.mockReturnValue(fakeGoogleCredential);
-      mockSignInWithEmailAndPassword.mockRejectedValue({ code: "auth/invalid-credential" });
-
-      const user = userEvent.setup();
-      render(<LoginForm />);
-      await user.click(screen.getByRole("button", { name: /continue with google/i }));
-      await screen.findByRole("button", { name: /link google account/i });
-
-      await user.type(screen.getByLabelText("Password for account linking"), "wrong-password");
-      await user.click(screen.getByRole("button", { name: /link google account/i }));
-
-      expect(await screen.findByText("Invalid email or password.")).toBeInTheDocument();
-      expect(mockLinkWithCredential).not.toHaveBeenCalled();
-      expect(screen.getByRole("button", { name: /link google account/i })).toBeInTheDocument();
-    });
-
-    it("shows a distinct linking-failure message (not the wrong-password message) when the password is correct but linkWithCredential itself fails", async () => {
-      mockSignInWithPopup.mockRejectedValue({
-        code: "auth/account-exists-with-different-credential",
-        customData: { email: "ann@example.com" },
-      });
-      mockCredentialFromError.mockReturnValue(fakeGoogleCredential);
-      const fakeUser = { getIdToken: vi.fn().mockResolvedValue("linked-id-token") };
-      mockSignInWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
-      mockLinkWithCredential.mockRejectedValue({ code: "auth/invalid-credential" });
-
-      const user = userEvent.setup();
-      render(<LoginForm />);
-      await user.click(screen.getByRole("button", { name: /continue with google/i }));
-      await screen.findByRole("button", { name: /link google account/i });
-
-      await user.type(screen.getByLabelText("Password for account linking"), "correct-password");
-      await user.click(screen.getByRole("button", { name: /link google account/i }));
-
-      expect(
-        await screen.findByText(/your password was correct, but we couldn't link your google account/i),
-      ).toBeInTheDocument();
-      expect(screen.queryByText("Invalid email or password.")).not.toBeInTheDocument();
-      expect(pushMock).not.toHaveBeenCalled();
-      expect(screen.getByRole("button", { name: /link google account/i })).toBeInTheDocument();
-    });
-
-    it("dismisses the prompt without calling Firebase when Cancel is clicked", async () => {
-      mockSignInWithPopup.mockRejectedValue({
-        code: "auth/account-exists-with-different-credential",
-        customData: { email: "ann@example.com" },
-      });
-      mockCredentialFromError.mockReturnValue(fakeGoogleCredential);
-
-      const user = userEvent.setup();
-      render(<LoginForm />);
-      await user.click(screen.getByRole("button", { name: /continue with google/i }));
-      await screen.findByRole("button", { name: /link google account/i });
-
-      await user.click(screen.getByRole("button", { name: /cancel/i }));
-
-      expect(screen.queryByRole("button", { name: /link google account/i })).not.toBeInTheDocument();
-      expect(mockSignInWithEmailAndPassword).not.toHaveBeenCalled();
-    });
   });
 });
