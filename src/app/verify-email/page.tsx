@@ -45,7 +45,10 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
           body: JSON.stringify({ email }),
         }).catch(() => {});
       }
-      if (!cancelled) router.push("/login?verified=true");
+      // No local Firebase session exists here, so there's nothing to mint a
+      // secure session from — land on "/" without creating a false session;
+      // proxy.ts will route them to /login if the page turns out to need one.
+      if (!cancelled) router.replace("/");
     }
 
     async function run() {
@@ -76,6 +79,9 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
 
       if (sameBrowser && currentUser) {
         try {
+          // Sync the client SDK's cached user with the verification we just
+          // applied before reading emailVerified/minting a token from it.
+          await reload(currentUser);
           const idToken = await currentUser.getIdToken(true);
           const response = await fetch("/api/auth/session", {
             method: "POST",
@@ -84,7 +90,7 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
           });
           if (!response.ok) throw new Error("session mint failed");
           if (!cancelled) {
-            router.push("/");
+            router.replace("/");
             router.refresh();
           }
           return;
@@ -110,9 +116,9 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-[0_4px_20px_-2px_rgba(2,36,72,0.08)] text-center">
           {state === "processing" ? (
             <>
-              <h1 className="text-headline-lg text-primary mb-2">Verifying your email</h1>
+              <h1 className="text-headline-lg text-primary mb-2">Verifying your email address</h1>
               <p role="status" aria-live="polite" className="text-body-md text-secondary">
-                Please wait a moment...
+                Please wait while we activate your account.
               </p>
             </>
           ) : (

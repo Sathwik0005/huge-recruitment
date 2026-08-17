@@ -3,11 +3,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 const refreshMock = vi.fn();
 let searchParamsValue = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock, refresh: refreshMock }),
   useSearchParams: () => searchParamsValue,
 }));
 
@@ -125,10 +126,23 @@ describe("VerifyEmailPage — check-email state (no action code)", () => {
 });
 
 describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)", () => {
-  it("same-browser success: checkActionCode + applyActionCode + /api/auth/session all run, then BOTH router.push('/') and router.refresh() are called (the header-refresh bug fix)", async () => {
+  it("shows the auth-themed processing state, with no button rendered, while verification is in flight", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "abc123" });
+    mockCheckActionCode.mockImplementation(() => new Promise(() => {})); // never resolves
+
+    const { container } = render(<VerifyEmailPage />);
+
+    expect(await screen.findByText("Verifying your email address")).toBeInTheDocument();
+    expect(screen.getByText("Please wait while we activate your account.")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-surface-container-lowest.border.rounded-xl")).toBeInTheDocument();
+  });
+
+  it("same-browser success: checkActionCode + applyActionCode + reload + /api/auth/session all run, then BOTH router.replace('/') and router.refresh() are called (the header-refresh bug fix)", async () => {
     searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "abc123" });
     mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
     mockApplyActionCode.mockResolvedValue(undefined);
+    mockReload.mockResolvedValue(undefined);
     const fakeUser = { email: "ann@example.com", getIdToken: vi.fn().mockResolvedValue("fresh-token") };
     authMock.currentUser = fakeUser;
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ user: {} }) });
@@ -136,15 +150,18 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
     render(<VerifyEmailPage />);
 
     await waitFor(() => expect(mockApplyActionCode).toHaveBeenCalledWith(authMock, "abc123"));
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockReload).toHaveBeenCalledWith(fakeUser));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/"));
     expect(refreshMock).toHaveBeenCalled();
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/auth/session",
       expect.objectContaining({ method: "POST", body: JSON.stringify({ idToken: "fresh-token" }) }),
     );
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalledWith("/verify-email");
   });
 
-  it("different-browser success: no matching signed-in user -> POSTs /api/auth/verification-complete, redirects to /login?verified=true, and never calls /api/auth/session or router.refresh()", async () => {
+  it("different-browser success: no matching signed-in user -> POSTs /api/auth/verification-complete, auto-redirects to / without a button click, and never creates a session or calls router.refresh()", async () => {
     searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "abc123" });
     mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
     mockApplyActionCode.mockResolvedValue(undefined);
@@ -153,16 +170,17 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
 
     render(<VerifyEmailPage />);
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login?verified=true"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/"));
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/auth/verification-complete",
       expect.objectContaining({ method: "POST", body: JSON.stringify({ email: "ann@example.com" }) }),
     );
     expect(global.fetch).not.toHaveBeenCalledWith("/api/auth/session", expect.anything());
     expect(refreshMock).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalledWith("/verify-email");
   });
 
-  it("shows a friendly error state for an invalid/expired code, with links back to login and register", async () => {
+  it("shows a friendly, auth-themed error state for an invalid action code, with links back to login and register", async () => {
     searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "bad-code" });
     mockCheckActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
 
@@ -173,5 +191,31 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /go to login/i })).toHaveAttribute("href", "/login");
     expect(screen.getByRole("link", { name: /create a new account/i })).toHaveAttribute("href", "/register");
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the expired-link message for an expired action code", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "expired-code" });
+    mockCheckActionCode.mockRejectedValue({ code: "auth/expired-action-code" });
+
+    render(<VerifyEmailPage />);
+
+    expect(await screen.findByText("This link has expired. Please request a new one.")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("shows an error state when applyActionCode itself rejects an already-used or malformed code", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "already-used" });
+    mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
+    mockApplyActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
+
+    render(<VerifyEmailPage />);
+
+    expect(
+      await screen.findByText("This link is invalid or has already been used. Please request a new one."),
+    ).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
