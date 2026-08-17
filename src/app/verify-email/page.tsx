@@ -25,7 +25,7 @@ function VerifyEmailPageContent() {
     return <VerifyEmailActionHandler oobCode={oobCode} />;
   }
 
-  return <CheckEmailState />;
+  return <CheckEmailState initialSendFailed={searchParams.get("sendFailed") === "true"} />;
 }
 
 function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
@@ -193,13 +193,18 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
  * error — but reload() here re-reads Firebase's own server-side truth
  * regardless of how verification happened, so it still works in that case.
  */
-function CheckEmailState() {
+function CheckEmailState({ initialSendFailed = false }: { initialSendFailed?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  // The account was created, but the initial verification email genuinely
+  // failed to send (the provider rejected it, or the send itself errored) —
+  // never claim "we sent a link" in that case. Cleared the moment the user
+  // successfully resends, so the honest state doesn't linger after recovery.
+  const [sendFailed, setSendFailed] = useState(initialSendFailed);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -268,6 +273,7 @@ function CheckEmailState() {
 
       setCooldown(RESEND_COOLDOWN_SECONDS);
       setMessage("Verification email sent.");
+      setSendFailed(false);
     } catch {
       setMessage("Something went wrong. Please try again.");
     } finally {
@@ -281,11 +287,20 @@ function CheckEmailState() {
     <main className="flex-1 flex items-center justify-center py-4 px-gutter">
       <div className="w-full max-w-[440px]">
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-[0_4px_20px_-2px_rgba(2,36,72,0.08)] text-center">
-          <h1 className="text-headline-lg text-primary mb-2">Check your email</h1>
-          <p className="text-body-md text-secondary mb-8">
-            We sent a verification link to <span className="font-bold">{user?.email}</span>. Click the
-            link to activate your account — you&apos;ll be signed in automatically.
-          </p>
+          <h1 className="text-headline-lg text-primary mb-2">
+            {sendFailed ? "We couldn't send your verification email" : "Check your email"}
+          </h1>
+          {sendFailed ? (
+            <p role="alert" aria-live="assertive" className="mb-8 text-label-md text-error bg-error-container text-on-error-container rounded-lg px-4 py-3">
+              Your account was created, but we couldn&apos;t send the verification email to{" "}
+              <span className="font-bold">{user?.email}</span>. Please try again below.
+            </p>
+          ) : (
+            <p className="text-body-md text-secondary mb-8">
+              We sent a verification link to <span className="font-bold">{user?.email}</span>. Click the
+              link to activate your account — you&apos;ll be signed in automatically.
+            </p>
+          )}
 
           {message && (
             <p role="status" aria-live="polite" className="text-label-md text-on-surface-variant mb-4">

@@ -59,6 +59,28 @@ describe("VerifyEmailPage — check-email state (no action code)", () => {
     expect(await screen.findByText("ann@example.com")).toBeInTheDocument();
   });
 
+  it("shows a truthful send-failed banner (never claiming an email was sent) when it lands with ?sendFailed=true, and clears it after a successful resend", async () => {
+    searchParamsValue = new URLSearchParams({ sendFailed: "true" });
+    const fakeUser = { email: "ann@example.com", getIdToken: vi.fn().mockResolvedValue("id-token") };
+    mockOnAuthStateChanged.mockImplementation((_auth, cb) => {
+      cb(fakeUser);
+      return () => {};
+    });
+    authMock.currentUser = fakeUser;
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+
+    const user = userEvent.setup();
+    render(<VerifyEmailPage />);
+
+    expect(await screen.findByText("We couldn't send your verification email")).toBeInTheDocument();
+    expect(screen.queryByText(/we sent a verification link/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /resend email/i }));
+
+    await waitFor(() => expect(screen.getByText("Verification email sent.")).toBeInTheDocument());
+    expect(screen.queryByText("We couldn't send your verification email")).not.toBeInTheDocument();
+  });
+
   it("resend button calls /api/auth/send-verification-email with a fresh ID token and starts a cooldown", async () => {
     const fakeUser = { email: "ann@example.com", getIdToken: vi.fn().mockResolvedValue("id-token") };
     mockOnAuthStateChanged.mockImplementation((_auth, cb) => {

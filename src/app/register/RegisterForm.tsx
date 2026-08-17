@@ -152,12 +152,12 @@ export function RegisterForm() {
       });
 
       if (!verificationResponse.ok) {
-        const data = await verificationResponse.json().catch(() => ({}));
-        setErrors({
-          form:
-            data.error ??
-            "Your account was created, but we couldn't send the verification email. You can request a new one from the next screen.",
-        });
+        // The account exists and is safe — only the send itself failed.
+        // Still navigate to the waiting screen (its Resend button is the
+        // real recovery action), but flag the failure so that screen shows
+        // the truth instead of falsely claiming an email was sent.
+        router.push("/verify-email?sendFailed=true");
+        return;
       }
 
       router.push("/verify-email");

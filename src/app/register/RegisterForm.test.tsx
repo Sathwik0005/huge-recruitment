@@ -200,6 +200,27 @@ describe("RegisterForm", () => {
     );
   });
 
+  it("navigates to /verify-email?sendFailed=true (never claiming success) when the account is created but the verification email genuinely fails to send", async () => {
+    mockFetchSignInMethodsForEmail.mockResolvedValue([]);
+    const fakeUser = { getIdToken: vi.fn().mockResolvedValue("id-token-123") };
+    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
+    mockUpdateProfile.mockResolvedValue(undefined);
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
+      if (url === "/api/auth/send-verification-email") {
+        return Promise.resolve({ ok: false, json: async () => ({ error: "Something went wrong sending the verification email. Please try again." }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ user: { id: "1" } }) });
+    });
+
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/verify-email?sendFailed=true"));
+    expect(pushMock).not.toHaveBeenCalledWith("/verify-email");
+  });
+
   it("shows the server's error and does not redirect when POST /api/users fails (e.g. 409 duplicate)", async () => {
     mockFetchSignInMethodsForEmail.mockResolvedValue([]);
     const fakeUser = { getIdToken: vi.fn().mockResolvedValue("id-token-123") };
