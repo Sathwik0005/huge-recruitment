@@ -45,6 +45,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Failed to generate/send verification email for uid:", decoded.uid, {
       errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json({ error: "Something went wrong sending the verification email. Please try again." }, { status: 500 });
   }

@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       // deliberately, same generic response either way.
       console.error("forgot-password link generation/send failed", {
         errorClass: error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
     }
   } else {
