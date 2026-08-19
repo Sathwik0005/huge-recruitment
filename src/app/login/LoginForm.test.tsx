@@ -4,8 +4,10 @@ import userEvent from "@testing-library/user-event";
 
 const pushMock = vi.fn();
 const refreshMock = vi.fn();
+let searchParamsValue = new URLSearchParams();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+  useSearchParams: () => searchParamsValue,
 }));
 
 const mockSignInWithEmailAndPassword = vi.fn();
@@ -26,9 +28,18 @@ import { LoginForm } from "./LoginForm";
 beforeEach(() => {
   vi.clearAllMocks();
   global.fetch = vi.fn();
+  searchParamsValue = new URLSearchParams();
 });
 
 describe("LoginForm", () => {
+  it("shows confirmation after a successful password reset", () => {
+    searchParamsValue = new URLSearchParams({ passwordReset: "true" });
+
+    render(<LoginForm />);
+
+    expect(screen.getByText(/password has been reset successfully/i)).toBeInTheDocument();
+  });
+
   it("shows a required-fields error and does not call Firebase when email/password are empty", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/firebase/admin", () => ({
   verifyIdToken: vi.fn(),
-  deleteUser: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -14,13 +13,12 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { verifyIdToken, deleteUser } from "@/firebase/admin";
+import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { POST } from "./route";
 
 const mockVerifyIdToken = vi.mocked(verifyIdToken);
-const mockDeleteUser = vi.mocked(deleteUser);
 const mockCreate = vi.mocked(prisma.user.create);
 const mockFindUnique = vi.mocked(prisma.user.findUnique);
 
@@ -80,6 +78,17 @@ describe("POST /api/users", () => {
     });
   });
 
+  it("trims names and normalizes the verified token email before storage", async () => {
+    mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "  Ann@Example.COM " } as never);
+    mockCreate.mockResolvedValue({ id: "1" } as never);
+
+    await POST(makeRequest({ idToken: "token", firstName: "  Ann ", lastName: " Lee  " }));
+
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: { firebaseUid: "uid-1", firstName: "Ann", lastName: "Lee", email: "ann@example.com" },
+    });
+  });
+
   it.each([
     [{ firstName: "Ann", lastName: "Lee" }, "missing idToken"],
     [{ idToken: "token", lastName: "Lee" }, "missing firstName"],
@@ -108,6 +117,15 @@ describe("POST /api/users", () => {
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
+  it("returns 400 without writing when the verified token has no email", async () => {
+    mockVerifyIdToken.mockResolvedValue({ uid: "uid-1" } as never);
+
+    const response = await POST(makeRequest({ idToken: "token", firstName: "Ann", lastName: "Lee" }));
+
+    expect(response.status).toBe(400);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
   it("does not set a session cookie on successful registration (no auto-login)", async () => {
     mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
     mockCreate.mockResolvedValue({ id: "1" } as never);
@@ -117,8 +135,8 @@ describe("POST /api/users", () => {
     expect(response.headers.get("set-cookie")).toBeNull();
   });
 
-  describe("guarded compensating rollback on Prisma create failure", () => {
-    it("idempotent retry: re-query finds an existing User -> returns 200 with existing user, never deletes the Firebase account", async () => {
+  describe("safe reconciliation after Prisma create failure", () => {
+    it("idempotent retry: re-query finds an existing User and returns 200", async () => {
       mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
       const existing = { id: "1", firebaseUid: "uid-1", firstName: "Ann", lastName: "Lee", email: "a@b.com" };
       mockCreate.mockRejectedValue(new Error("some create failure"));
@@ -130,10 +148,9 @@ describe("POST /api/users", () => {
       expect(response.status).toBe(200);
       expect(json).toEqual({ user: existing });
       expect(mockFindUnique).toHaveBeenCalledWith({ where: { firebaseUid: "uid-1" } });
-      expect(mockDeleteUser).not.toHaveBeenCalled();
     });
 
-    it("confirmed orphan + P2002 -> deletes the Firebase account and returns 409", async () => {
+    it("P2002 with no matching UID returns 409 without deleting the retryable Firebase identity", async () => {
       mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
       const p2002 = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
         code: "P2002",
@@ -141,31 +158,27 @@ describe("POST /api/users", () => {
       });
       mockCreate.mockRejectedValue(p2002);
       mockFindUnique.mockResolvedValue(null);
-      mockDeleteUser.mockResolvedValue(undefined as never);
 
       const response = await POST(makeRequest({ idToken: "token", firstName: "Ann", lastName: "Lee" }));
       const json = await response.json();
 
       expect(response.status).toBe(409);
       expect(json.error).toBeTruthy();
-      expect(mockDeleteUser).toHaveBeenCalledWith("uid-1");
     });
 
-    it("confirmed orphan + non-P2002 error -> deletes the Firebase account and returns 500", async () => {
+    it("temporary database failure preserves the Firebase identity and returns a retryable 503", async () => {
       mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
       mockCreate.mockRejectedValue(new Error("unexpected db failure"));
       mockFindUnique.mockResolvedValue(null);
-      mockDeleteUser.mockResolvedValue(undefined as never);
 
       const response = await POST(makeRequest({ idToken: "token", firstName: "Ann", lastName: "Lee" }));
       const json = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(json.error).toBeTruthy();
-      expect(mockDeleteUser).toHaveBeenCalledWith("uid-1");
+      expect(response.status).toBe(503);
+      expect(json.error).toMatch(/try again/i);
     });
 
-    it("indeterminate ground truth (re-query itself throws) -> never deletes, returns 500", async () => {
+    it("reconciliation lookup failure returns a retryable 503", async () => {
       mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
       mockCreate.mockRejectedValue(new Error("create failed"));
       mockFindUnique.mockRejectedValue(new Error("db unreachable"));
@@ -173,9 +186,8 @@ describe("POST /api/users", () => {
       const response = await POST(makeRequest({ idToken: "token", firstName: "Ann", lastName: "Lee" }));
       const json = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(json.error).toBeTruthy();
-      expect(mockDeleteUser).not.toHaveBeenCalled();
+      expect(response.status).toBe(503);
+      expect(json.error).toMatch(/try again/i);
     });
   });
 });

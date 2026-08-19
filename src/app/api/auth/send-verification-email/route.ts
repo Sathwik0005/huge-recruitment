@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyIdToken, generateEmailVerificationLink } from "@/firebase/admin";
 import { sendVerificationEmail } from "@/lib/auth-email";
 import { toAppActionLink } from "@/lib/firebase-action-link";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitWithRetry } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   let body: { idToken?: string };
@@ -24,9 +24,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid or expired token." }, { status: 401 });
   }
 
-  const allowed = await checkRateLimit("verificationEmail", decoded.uid);
-  if (!allowed) {
-    return NextResponse.json({ error: "Too many requests. Please wait a moment and try again." }, { status: 429 });
+  const rateLimit = await checkRateLimitWithRetry("verificationEmail", decoded.uid);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: `Please wait ${rateLimit.retryAfterSeconds} seconds before requesting another verification email.`,
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;

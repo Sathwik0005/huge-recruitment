@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { getUserByEmail } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmailOnce } from "@/lib/welcome-email";
@@ -27,30 +27,37 @@ export async function POST(request: Request) {
   }
 
   const { email } = body;
-  if (!email) {
+  if (typeof email !== "string" || !email.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
+
+  const normalizedEmail = email.trim().toLowerCase();
 
   const allowed = await checkRateLimit("verificationComplete", getClientIdentifier(request));
   if (!allowed) {
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
   }
 
-  try {
-    const firebaseUser = await getUserByEmail(email);
-    if (firebaseUser.emailVerified) {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (user) {
-        await sendWelcomeEmailOnce(user);
+  // No session is created here. Return the same generic response immediately
+  // and perform the independently verified welcome-email work after it, so a
+  // Firebase/database/provider delay cannot hold up the browser redirect.
+  after(async () => {
+    try {
+      const firebaseUser = await getUserByEmail(normalizedEmail);
+      if (firebaseUser.emailVerified) {
+        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        if (user) {
+          await sendWelcomeEmailOnce(user);
+        }
       }
+    } catch (error) {
+      // Includes auth/user-not-found — swallowed deliberately, with the same
+      // generic public response for every account state.
+      console.error("verification-complete lookup failed", {
+        errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      });
     }
-  } catch (error) {
-    // Includes auth/user-not-found — swallowed deliberately, same generic
-    // response either way.
-    console.error("verification-complete lookup failed", {
-      errorClass: error instanceof Error ? error.constructor.name : typeof error,
-    });
-  }
+  });
 
   return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
 }

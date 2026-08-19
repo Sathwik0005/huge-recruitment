@@ -72,7 +72,7 @@ export function ResetPasswordForm() {
     setSubmitting(true);
     try {
       await confirmPasswordReset(auth, oobCode, password);
-      router.push("/login?passwordReset=true");
+      router.replace("/login?passwordReset=true");
     } catch (err) {
       setFormError(getFirebaseErrorMessage(err));
     } finally {

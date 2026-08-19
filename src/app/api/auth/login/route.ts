@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { mintSession } from "@/lib/mint-session";
@@ -33,7 +33,23 @@ export async function POST(request: Request) {
   const signInProvider = decoded.firebase?.sign_in_provider;
   const isGoogleSignIn = signInProvider === "google.com" && decoded.email_verified === true;
 
-  let user = await prisma.user.findUnique({ where: { firebaseUid: decoded.uid } });
+  if (typeof decoded.email !== "string" || !decoded.email.trim()) {
+    return NextResponse.json({ error: "The authenticated account does not have an email address." }, { status: 400 });
+  }
+  const verifiedEmail = decoded.email.trim().toLowerCase();
+
+  let user;
+  try {
+    user = await prisma.user.findUnique({ where: { firebaseUid: decoded.uid } });
+  } catch (error) {
+    console.error("Failed to look up user during login", {
+      uid: decoded.uid,
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+    return NextResponse.json({ error: "We couldn't sign you in right now. Please try again." }, { status: 503 });
+  }
+
+  let newlyCreated = false;
 
   if (!user) {
     if (!isGoogleSignIn) {
@@ -53,18 +69,39 @@ export async function POST(request: Request) {
           firebaseUid: decoded.uid,
           firstName: firstName || "Google",
           lastName: lastName || "User",
-          email: decoded.email!,
+          email: verifiedEmail,
         },
       });
+      newlyCreated = true;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+        // A concurrent Google-login request may have created this exact user
+        // after the lookup above. Reconcile by the verified UID before
+        // reporting a genuine account conflict.
+        try {
+          user = await prisma.user.findUnique({ where: { firebaseUid: decoded.uid } });
+        } catch {
+          return NextResponse.json({ error: "We couldn't sign you in right now. Please try again." }, { status: 503 });
+        }
+        if (!user) {
+          return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+        }
+      } else {
+        console.error("Failed to create Google user during login", {
+          uid: decoded.uid,
+          errorClass: error instanceof Error ? error.constructor.name : typeof error,
+        });
+        return NextResponse.json({ error: "We couldn't sign you in right now. Please try again." }, { status: 503 });
       }
-      throw error;
     }
-
-    await sendWelcomeEmailOnce(user);
   }
+
+  // All successful branches above resolve an application user. Keep a
+  // stable non-null reference for the deferred callback below.
+  if (!user) {
+    return NextResponse.json({ error: "We couldn't sign you in right now. Please try again." }, { status: 503 });
+  }
+  const authenticatedUser = user;
 
   // Only a verified identity may ever receive a session: Google sign-ins
   // already required email_verified === true above (isGoogleSignIn), so this
@@ -79,7 +116,23 @@ export async function POST(request: Request) {
     );
   }
 
-  await mintSession(idToken);
+  try {
+    await mintSession(idToken);
+  } catch (error) {
+    console.error("Failed to create session during login", {
+      uid: decoded.uid,
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+    return NextResponse.json({ error: "We couldn't sign you in right now. Please try again." }, { status: 500 });
+  }
 
-  return NextResponse.json({ user }, { status: 200 });
+  if (newlyCreated) {
+    // Authentication is already complete. A welcome email must never delay
+    // or change the successful Google sign-in response.
+    after(async () => {
+      await sendWelcomeEmailOnce(authenticatedUser);
+    });
+  }
+
+  return NextResponse.json({ user: authenticatedUser }, { status: 200 });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
@@ -36,6 +36,10 @@ export function RegisterForm() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  // React state updates are asynchronous. This ref closes the small window
+  // where two rapid submit events could both begin before the disabled state
+  // is rendered.
+  const submissionInFlightRef = useRef(false);
 
   async function postLogin(idToken: string) {
     const response = await fetch("/api/auth/login", {
@@ -68,12 +72,16 @@ export function RegisterForm() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (submissionInFlightRef.current) return;
     setErrors({});
 
+    const cleanFirstName = firstName.trim();
+    const cleanLastName = lastName.trim();
+    const normalizedEmail = email.trim().toLowerCase();
     const nextErrors: FieldErrors = {};
-    if (!firstName.trim()) nextErrors.firstName = "First name is required.";
-    if (!lastName.trim()) nextErrors.lastName = "Last name is required.";
-    if (!EMAIL_REGEX.test(email)) nextErrors.email = "Please enter a valid email address.";
+    if (!cleanFirstName) nextErrors.firstName = "First name is required.";
+    if (!cleanLastName) nextErrors.lastName = "Last name is required.";
+    if (!EMAIL_REGEX.test(normalizedEmail)) nextErrors.email = "Please enter a valid email address.";
 
     const passwordErrors = validatePassword(password);
     if (passwordErrors.length > 0) nextErrors.password = passwordErrors[0];
@@ -85,12 +93,23 @@ export function RegisterForm() {
       return;
     }
 
+    submissionInFlightRef.current = true;
     setSubmitting(true);
     try {
       let user;
       try {
-        const credential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(credential.user, { displayName: `${firstName} ${lastName}` });
+        const credential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+        try {
+          await updateProfile(credential.user, { displayName: `${cleanFirstName} ${cleanLastName}` });
+        } catch (profileError) {
+          // The Firebase account already exists at this point. Display-name
+          // metadata is non-critical because the authoritative names are
+          // stored by the server below; never turn this into a failed or
+          // stranded registration.
+          console.error("Firebase display-name update failed during registration", {
+            errorClass: profileError instanceof Error ? profileError.constructor.name : typeof profileError,
+          });
+        }
         user = credential.user;
       } catch (createError) {
         const code = (createError as { code?: string } | null)?.code;
@@ -109,9 +128,9 @@ export function RegisterForm() {
         // account exists, which would silently skip this recovery path.)
         let signInCredential;
         try {
-          signInCredential = await signInWithEmailAndPassword(auth, email, password);
+          signInCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
         } catch {
-          const methods = await fetchSignInMethodsForEmail(auth, email).catch(() => [] as string[]);
+          const methods = await fetchSignInMethodsForEmail(auth, normalizedEmail).catch(() => [] as string[]);
           if (methods.includes("google.com") && !methods.includes("password")) {
             setErrors({
               email: "This email is already registered with Google. Please continue with Google instead.",
@@ -136,7 +155,7 @@ export function RegisterForm() {
       const response = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, firstName, lastName }),
+        body: JSON.stringify({ idToken, firstName: cleanFirstName, lastName: cleanLastName }),
       });
 
       if (!response.ok) {
@@ -164,6 +183,7 @@ export function RegisterForm() {
     } catch (error) {
       setErrors({ form: getFirebaseErrorMessage(error) });
     } finally {
+      submissionInFlightRef.current = false;
       setSubmitting(false);
     }
   }

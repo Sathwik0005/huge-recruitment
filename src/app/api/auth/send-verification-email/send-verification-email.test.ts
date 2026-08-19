@@ -10,18 +10,18 @@ vi.mock("@/lib/auth-email", () => ({
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
-  checkRateLimit: vi.fn(),
+  checkRateLimitWithRetry: vi.fn(),
 }));
 
 import { verifyIdToken, generateEmailVerificationLink } from "@/firebase/admin";
 import { sendVerificationEmail } from "@/lib/auth-email";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitWithRetry } from "@/lib/rate-limit";
 import { POST } from "./route";
 
 const mockVerifyIdToken = vi.mocked(verifyIdToken);
 const mockGenerateLink = vi.mocked(generateEmailVerificationLink);
 const mockSendVerificationEmail = vi.mocked(sendVerificationEmail);
-const mockCheckRateLimit = vi.mocked(checkRateLimit);
+const mockCheckRateLimit = vi.mocked(checkRateLimitWithRetry);
 
 function makeRequest(body: unknown) {
   return new Request("http://localhost/api/auth/send-verification-email", {
@@ -35,7 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
   vi.stubEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "huge-recruitment.firebaseapp.com");
-  mockCheckRateLimit.mockResolvedValue(true);
+  mockCheckRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
   mockGenerateLink.mockResolvedValue(
     "https://huge-recruitment.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=abc&apiKey=fake-key",
   );
@@ -60,11 +60,14 @@ describe("POST /api/auth/send-verification-email", () => {
 
   it("returns 429 when rate-limited, without generating a link", async () => {
     mockVerifyIdToken.mockResolvedValue({ uid: "uid-1", email: "a@b.com" } as never);
-    mockCheckRateLimit.mockResolvedValue(false);
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 347 });
 
     const response = await POST(makeRequest({ idToken: "token" }));
+    const json = await response.json();
 
     expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("347");
+    expect(json.retryAfterSeconds).toBe(347);
     expect(mockGenerateLink).not.toHaveBeenCalled();
   });
 

@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 
 const GENERIC_SUCCESS_MESSAGE =
   "If an account exists for that email address, we've sent a password reset link. Please check your inbox and spam folder.";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -16,28 +17,32 @@ export function ForgotPasswordForm() {
     setError(null);
     setSuccess(false);
 
-    if (!email) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
       setError("Email is required.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      setError("Please enter a valid email address.");
       return;
     }
 
     setSubmitting(true);
     try {
-      // The server always responds the same way whether or not an account
-      // exists for this email — anti-enumeration is enforced there, so the
-      // client always shows the generic success state on any response
-      // (including a network failure) rather than distinguishing outcomes.
+      // Any completed server response remains generic so account existence
+      // is never revealed. A browser/network failure is safe to distinguish:
+      // it says nothing about whether the submitted account exists.
       await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
+      setSuccess(true);
     } catch {
-      // Fall through to the same generic success state below.
+      setError("We couldn't reach the server. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
-    setSuccess(true);
   }
 
   if (success) {

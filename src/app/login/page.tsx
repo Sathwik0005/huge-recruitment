@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getSession } from "@/lib/session";
 import { LoginForm } from "./LoginForm";
 
@@ -16,7 +17,9 @@ export default async function LoginPage() {
               Elevate your career with specialist guidance
             </p>
           </div>
-          <LoginForm />
+          <Suspense fallback={null}>
+            <LoginForm />
+          </Suspense>
           <div className="mt-8 text-center">
             <p className="text-body-md text-secondary">
               New to Huge Requirements Limited?{" "}

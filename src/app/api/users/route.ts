@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyIdToken, deleteUser } from "@/firebase/admin";
+import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -12,8 +12,21 @@ export async function POST(request: Request) {
   }
 
   const { idToken, firstName, lastName } = body;
-  if (!idToken || !firstName || !lastName) {
+  if (
+    typeof idToken !== "string" ||
+    typeof firstName !== "string" ||
+    typeof lastName !== "string" ||
+    !idToken ||
+    !firstName.trim() ||
+    !lastName.trim()
+  ) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  const cleanFirstName = firstName.trim();
+  const cleanLastName = lastName.trim();
+  if (cleanFirstName.length > 100 || cleanLastName.length > 100) {
+    return NextResponse.json({ error: "First name and last name must be 100 characters or fewer." }, { status: 400 });
   }
 
   let decoded;
@@ -23,47 +36,59 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid or expired token." }, { status: 401 });
   }
 
+  if (typeof decoded.email !== "string" || !decoded.email.trim()) {
+    return NextResponse.json({ error: "The authenticated account does not have an email address." }, { status: 400 });
+  }
+
+  const verifiedEmail = decoded.email.trim().toLowerCase();
+
   try {
     const user = await prisma.user.create({
       data: {
         firebaseUid: decoded.uid,
-        firstName,
-        lastName,
-        email: decoded.email!,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        email: verifiedEmail,
       },
     });
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
-    // Guarded compensating rollback: only delete the just-created Firebase
-    // account if an independent read confirms no Prisma User exists for this
-    // exact UID. This distinguishes a genuine orphan from an idempotent
-    // retry (or a race where a concurrent request already succeeded).
-    let existing;
+    // A concurrent request or a retry may already have created this row.
+    // Reconcile by the verified Firebase UID before treating the create as a
+    // failure. Never delete the Firebase identity here: a temporary database
+    // failure must remain safely retryable by the account owner.
+    let existingByUid;
     try {
-      existing = await prisma.user.findUnique({ where: { firebaseUid: decoded.uid } });
+      existingByUid = await prisma.user.findUnique({ where: { firebaseUid: decoded.uid } });
     } catch {
-      // Ground truth is undeterminable — fail safe, never delete.
-      console.error("Failed to verify User existence during rollback check for uid:", decoded.uid, error);
-      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+      console.error("Failed to reconcile registration after database create failure", {
+        uid: decoded.uid,
+        errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      });
+      return NextResponse.json(
+        { error: "We couldn't finish creating your account. Please try again." },
+        { status: 503 },
+      );
     }
 
-    if (existing) {
-      // The create actually succeeded previously (idempotent retry / race).
-      return NextResponse.json({ user: existing }, { status: 200 });
-    }
-
-    // Confirmed orphan: no Prisma User exists for this UID. Safe to clean up.
-    try {
-      await deleteUser(decoded.uid);
-    } catch (deleteError) {
-      console.error("Failed to delete orphaned Firebase user", decoded.uid, deleteError);
+    if (existingByUid) {
+      return NextResponse.json({ user: existingByUid }, { status: 200 });
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      // A row with the same email but a different Firebase UID represents an
+      // inconsistent legacy/account-linking state. Do not overwrite it and
+      // do not delete either identity automatically.
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
     }
 
-    console.error("Failed to create User during registration", error);
-    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+    console.error("Failed to create User during registration", {
+      uid: decoded.uid,
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+    return NextResponse.json(
+      { error: "We couldn't finish creating your account. Please try again." },
+      { status: 503 },
+    );
   }
 }

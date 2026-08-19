@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+vi.mock("next/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/server")>();
+  return {
+    ...actual,
+    after: vi.fn((callback: () => void | Promise<void>) => {
+      void callback();
+    }),
+  };
+});
+
 vi.mock("@/firebase/admin", () => ({
   verifyIdToken: vi.fn(),
 }));
@@ -26,6 +36,7 @@ import { prisma } from "@/lib/prisma";
 import { mintSession } from "@/lib/mint-session";
 import { sendWelcomeEmailOnce } from "@/lib/welcome-email";
 import { Prisma } from "@/generated/prisma/client";
+import { after } from "next/server";
 import { POST } from "./route";
 
 const mockVerifyIdToken = vi.mocked(verifyIdToken);
@@ -33,6 +44,7 @@ const mockFindUnique = vi.mocked(prisma.user.findUnique);
 const mockCreate = vi.mocked(prisma.user.create);
 const mockMintSession = vi.mocked(mintSession);
 const mockSendWelcomeEmailOnce = vi.mocked(sendWelcomeEmailOnce);
+const mockAfter = vi.mocked(after);
 
 function makeRequest(body: unknown) {
   return new Request("http://localhost/api/auth/login", {
@@ -189,12 +201,29 @@ describe("POST /api/auth/login", () => {
       data: { firebaseUid: "uid-1", firstName: "Jane", lastName: "Doe", email: "a@b.com" },
     });
     expect(mockMintSession).toHaveBeenCalledWith("token");
+    expect(mockAfter).toHaveBeenCalledTimes(1);
     expect(mockSendWelcomeEmailOnce).toHaveBeenCalledWith(createdUser);
-    // Welcome email is sent before the session is minted, so a slow/failed
-    // send can never block or race the actual sign-in.
-    expect(mockSendWelcomeEmailOnce.mock.invocationCallOrder[0]).toBeLessThan(
-      mockMintSession.mock.invocationCallOrder[0],
+    expect(mockMintSession.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSendWelcomeEmailOnce.mock.invocationCallOrder[0],
     );
+  });
+
+  it("does not wait for the welcome email before returning a successful new-Google-user session", async () => {
+    mockVerifyIdToken.mockResolvedValue({
+      uid: "uid-1",
+      email: "a@b.com",
+      email_verified: true,
+      name: "Jane Doe",
+      firebase: { sign_in_provider: "google.com" },
+    } as never);
+    mockFindUnique.mockResolvedValue(null);
+    mockCreate.mockResolvedValue({ id: "1", firebaseUid: "uid-1", firstName: "Jane", lastName: "Doe", email: "a@b.com" } as never);
+    mockSendWelcomeEmailOnce.mockImplementation(() => new Promise(() => {}));
+
+    const response = await POST(makeRequest({ idToken: "token", provider: "google" }));
+
+    expect(response.status).toBe(200);
+    expect(mockMintSession).toHaveBeenCalledWith("token");
   });
 
   it("does not send a welcome email for an existing (non-newly-created) Google user", async () => {
@@ -251,6 +280,48 @@ describe("POST /api/auth/login", () => {
     expect(response.status).toBe(409);
     expect(json.error).toBeTruthy();
     expect(mockMintSession).not.toHaveBeenCalled();
+  });
+
+  it("Google auto-provisioning: reconciles a P2002 race when the same verified UID now exists", async () => {
+    mockVerifyIdToken.mockResolvedValue({
+      uid: "uid-1",
+      email: "a@b.com",
+      email_verified: true,
+      name: "Jane Doe",
+      firebase: { sign_in_provider: "google.com" },
+    } as never);
+    const racedUser = { id: "1", firebaseUid: "uid-1", firstName: "Jane", lastName: "Doe", email: "a@b.com" };
+    mockFindUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(racedUser as never);
+    const p2002 = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+      code: "P2002",
+      clientVersion: "0.0.0",
+    });
+    mockCreate.mockRejectedValue(p2002);
+
+    const response = await POST(makeRequest({ idToken: "token", provider: "google" }));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ user: racedUser });
+    expect(mockMintSession).toHaveBeenCalledWith("token");
+  });
+
+  it("returns a controlled error when session creation fails", async () => {
+    mockVerifyIdToken.mockResolvedValue({
+      uid: "uid-1",
+      email: "a@b.com",
+      email_verified: true,
+      firebase: { sign_in_provider: "password" },
+    } as never);
+    mockFindUnique.mockResolvedValue({ id: "1", firebaseUid: "uid-1" } as never);
+    mockMintSession.mockRejectedValue(new Error("firebase unavailable"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await POST(makeRequest({ idToken: "token", provider: "password" }));
+
+    expect(response.status).toBe(500);
+    expect(mockAfter).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   it("does not query/scope by any client-supplied uid — only the verified token's uid is used", async () => {

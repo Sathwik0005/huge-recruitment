@@ -103,48 +103,17 @@ describe("VerifyEmailPage — check-email state (no action code)", () => {
     expect(await screen.findByText(/resend available in/i)).toBeInTheDocument();
   });
 
-  it("'I've already verified' fallback shows a not-yet-verified message when reload() still reports unverified", async () => {
+  it("does not render the obsolete manual 'I've already verified' button", async () => {
     const fakeUser = { email: "ann@example.com", emailVerified: false, getIdToken: vi.fn() };
     mockOnAuthStateChanged.mockImplementation((_auth, cb) => {
       cb(fakeUser);
       return () => {};
     });
     authMock.currentUser = fakeUser;
-    mockReload.mockResolvedValue(undefined);
 
-    const user = userEvent.setup();
     render(<VerifyEmailPage />);
-    await user.click(await screen.findByRole("button", { name: /i've already verified/i }));
-
-    expect(await screen.findByText(/still not verified/i)).toBeInTheDocument();
-  });
-
-  it("'I've already verified' fallback mints a session and redirects+refreshes when reload() reports verified", async () => {
-    const fakeUser: { email: string; emailVerified: boolean; getIdToken: ReturnType<typeof vi.fn> } = {
-      email: "ann@example.com",
-      emailVerified: false,
-      getIdToken: vi.fn().mockResolvedValue("fresh-token"),
-    };
-    mockOnAuthStateChanged.mockImplementation((_auth, cb) => {
-      cb(fakeUser);
-      return () => {};
-    });
-    authMock.currentUser = fakeUser;
-    mockReload.mockImplementation(async () => {
-      fakeUser.emailVerified = true;
-    });
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ user: {} }) });
-
-    const user = userEvent.setup();
-    render(<VerifyEmailPage />);
-    await user.click(await screen.findByRole("button", { name: /i've already verified/i }));
-
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
-    expect(refreshMock).toHaveBeenCalled();
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/auth/session",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ idToken: "fresh-token" }) }),
-    );
+    expect(await screen.findByText("ann@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /i've already verified/i })).not.toBeInTheDocument();
   });
 });
 
@@ -264,6 +233,30 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
       expect.objectContaining({ method: "POST", body: JSON.stringify({ idToken: "fresh-token" }) }),
     );
     expect(screen.queryByText("This link isn't valid")).not.toBeInTheDocument();
+  });
+
+  it("never relabels an already-verified account as an invalid link when session creation fails", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "already-used" });
+    mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
+    mockApplyActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
+    const fakeUser = {
+      email: "ann@example.com",
+      emailVerified: true,
+      getIdToken: vi.fn().mockResolvedValue("fresh-token"),
+    };
+    authMock.currentUser = fakeUser;
+    mockReload.mockResolvedValue(undefined);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "Session service is temporarily unavailable." }),
+    });
+
+    render(<VerifyEmailPage />);
+
+    expect(await screen.findByText("Your email is verified")).toBeInTheDocument();
+    expect(screen.getByText("Session service is temporarily unavailable.")).toBeInTheDocument();
+    expect(screen.queryByText("This link isn't valid")).not.toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("a second/duplicate applyActionCode() failure still shows the real error when the signed-in user is NOT actually verified", async () => {

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { verifyIdToken } from "@/firebase/admin";
 import { prisma } from "@/lib/prisma";
 import { mintSession } from "@/lib/mint-session";
@@ -35,8 +35,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No account found for this email." }, { status: 404 });
   }
 
-  await mintSession(idToken);
-  await sendWelcomeEmailOnce(user);
+  try {
+    await mintSession(idToken);
+  } catch (error) {
+    console.error("Failed to create verified user session", {
+      uid: decoded.uid,
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+    return NextResponse.json(
+      { error: "Your email is verified, but we couldn't sign you in automatically. Please sign in again." },
+      { status: 500 },
+    );
+  }
+
+  // The secure session is already complete. Welcome-email processing is
+  // non-critical and must not delay or change this successful auth response.
+  after(async () => {
+    await sendWelcomeEmailOnce(user);
+  });
 
   return NextResponse.json({ user }, { status: 200 });
 }

@@ -20,14 +20,14 @@ beforeEach(() => {
 describe("/auth/action — shared Firebase email-action router", () => {
   it("forwards mode=verifyEmail to /verify-email, preserving mode and oobCode", async () => {
     await expect(
-      AuthActionPage({ searchParams: searchParams({ mode: "verifyEmail", oobCode: "abc123" }) }),
-    ).rejects.toThrow("REDIRECT:/verify-email?mode=verifyEmail&oobCode=abc123");
+      AuthActionPage({ searchParams: searchParams({ mode: "verifyEmail", oobCode: "abc123", apiKey: "key" }) }),
+    ).rejects.toThrow("REDIRECT:/verify-email?mode=verifyEmail&oobCode=abc123&apiKey=key");
   });
 
   it("forwards mode=resetPassword to /reset-password, preserving mode and oobCode", async () => {
     await expect(
-      AuthActionPage({ searchParams: searchParams({ mode: "resetPassword", oobCode: "xyz789" }) }),
-    ).rejects.toThrow("REDIRECT:/reset-password?mode=resetPassword&oobCode=xyz789");
+      AuthActionPage({ searchParams: searchParams({ mode: "resetPassword", oobCode: "xyz789", apiKey: "key" }) }),
+    ).rejects.toThrow("REDIRECT:/reset-password?mode=resetPassword&oobCode=xyz789&apiKey=key");
   });
 
   it("preserves all Firebase-supplied parameters (apiKey, continueUrl, lang, tenantId) when present", async () => {
@@ -55,11 +55,12 @@ describe("/auth/action — shared Firebase email-action router", () => {
         searchParams: searchParams({
           mode: "verifyEmail",
           oobCode: "abc123",
+          apiKey: "key",
           continueUrl: "https://huge-recruitment.vercel.app/?next=a&b=c",
         }),
       }),
     ).rejects.toThrow(
-      "REDIRECT:/verify-email?mode=verifyEmail&oobCode=abc123&continueUrl=" +
+      "REDIRECT:/verify-email?mode=verifyEmail&oobCode=abc123&apiKey=key&continueUrl=" +
         encodeURIComponent("https://huge-recruitment.vercel.app/?next=a&b=c"),
     );
   });
@@ -72,6 +73,7 @@ describe("/auth/action — shared Firebase email-action router", () => {
         searchParams: searchParams({
           mode: "verifyEmail",
           oobCode: "abc123",
+          apiKey: "key",
           continueUrl: "https://evil.example.com/steal",
         }),
       }),
@@ -102,6 +104,21 @@ describe("/auth/action — shared Firebase email-action router", () => {
     const jsx = await AuthActionPage({
       searchParams: searchParams({ mode: "recoverEmail", oobCode: "abc123" }),
     });
+    render(jsx);
+
+    expect(screen.getByRole("heading", { name: /this link isn.t valid/i })).toBeInTheDocument();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { mode: "verifyEmail", apiKey: "key" },
+    { mode: "verifyEmail", oobCode: "abc123" },
+    { mode: "resetPassword", apiKey: "key" },
+    { mode: "resetPassword", oobCode: "abc123" },
+  ])("shows the error state instead of redirecting when a required Firebase parameter is missing: %o", async (params) => {
+    const { redirect } = await import("next/navigation");
+
+    const jsx = await AuthActionPage({ searchParams: searchParams(params) });
     render(jsx);
 
     expect(screen.getByRole("heading", { name: /this link isn.t valid/i })).toBeInTheDocument();

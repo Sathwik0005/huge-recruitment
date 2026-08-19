@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const pushMock = vi.fn();
@@ -196,6 +196,76 @@ describe("RegisterForm", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ idToken: "id-token-123" }),
+      }),
+    );
+  });
+
+  it("continues registration when the non-critical Firebase display-name update fails", async () => {
+    const fakeUser = { getIdToken: vi.fn().mockResolvedValue("id-token-123") };
+    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
+    mockUpdateProfile.mockRejectedValue(new Error("profile service unavailable"));
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: { id: "1" } }),
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/verify-email"));
+    expect(global.fetch).toHaveBeenCalledWith("/api/users", expect.anything());
+    errorSpy.mockRestore();
+  });
+
+  it("prevents two synchronous form submissions from creating two Firebase accounts", async () => {
+    let resolveCreate!: (value: unknown) => void;
+    mockCreateUserWithEmailAndPassword.mockImplementation(
+      () => new Promise((resolve) => { resolveCreate = resolve; }),
+    );
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: { id: "1" } }),
+    });
+
+    const user = userEvent.setup();
+    const { container } = render(<RegisterForm />);
+    await fillValidForm(user);
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+
+    fireEvent.submit(form!);
+    fireEvent.submit(form!);
+
+    expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalledTimes(1);
+    resolveCreate({ user: { getIdToken: vi.fn().mockResolvedValue("id-token") } });
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/verify-email"));
+  });
+
+  it("normalizes email and names before creating and provisioning the account", async () => {
+    const fakeUser = { getIdToken: vi.fn().mockResolvedValue("id-token-123") };
+    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: fakeUser });
+    mockUpdateProfile.mockResolvedValue(undefined);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ user: { id: "1" } }) });
+
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+    await user.type(screen.getByLabelText("First Name"), "  Ann  ");
+    await user.type(screen.getByLabelText("Last Name"), "  Lee  ");
+    await user.type(screen.getByLabelText("Email Address"), "  ANN@Example.COM  ");
+    await user.type(screen.getByLabelText("Password"), VALID_PASSWORD);
+    await user.type(screen.getByLabelText("Confirm Password"), VALID_PASSWORD);
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/verify-email"));
+    expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalledWith(expect.anything(), "ann@example.com", VALID_PASSWORD);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/users",
+      expect.objectContaining({
+        body: JSON.stringify({ idToken: "id-token-123", firstName: "Ann", lastName: "Lee" }),
       }),
     );
   });

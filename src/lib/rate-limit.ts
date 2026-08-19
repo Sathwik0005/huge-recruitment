@@ -58,15 +58,37 @@ function getRatelimiters() {
  * but logs loudly so a missing production config isn't silent.
  */
 export async function checkRateLimit(kind: RateLimitKind, identifier: string): Promise<boolean> {
+  const result = await checkRateLimitWithRetry(kind, identifier);
+  return result.allowed;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  retryAfterSeconds: number;
+}
+
+/**
+ * Returns both the decision and Upstash's real remaining wait time. Routes
+ * with interactive cooldown UIs should use this instead of guessing a
+ * client-side duration that can disagree with the server window.
+ */
+export async function checkRateLimitWithRetry(
+  kind: RateLimitKind,
+  identifier: string,
+): Promise<RateLimitResult> {
   const limiters = getRatelimiters();
   if (!limiters) {
     console.error("Upstash rate limiting is not configured; allowing request without a limit");
-    return true;
+    return { allowed: true, retryAfterSeconds: 0 };
   }
 
   try {
-    const { success } = await limiters[kind].limit(identifier);
-    return success;
+    const { success, reset } = await limiters[kind].limit(identifier);
+    if (success) return { allowed: true, retryAfterSeconds: 0 };
+
+    const resetAt = typeof reset === "number" ? reset : Date.now() + 60_000;
+    const retryAfterSeconds = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+    return { allowed: false, retryAfterSeconds };
   } catch (error) {
     // Fails open, same as "not configured": a transient Upstash outage must
     // never surface to the caller as an uncaught 500 — every route calling
@@ -76,7 +98,7 @@ export async function checkRateLimit(kind: RateLimitKind, identifier: string): P
       errorClass: error instanceof Error ? error.constructor.name : typeof error,
       errorMessage: error instanceof Error ? error.message : String(error),
     });
-    return true;
+    return { allowed: true, retryAfterSeconds: 0 };
   }
 }
 

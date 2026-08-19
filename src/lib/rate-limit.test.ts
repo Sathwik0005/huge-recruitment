@@ -16,7 +16,7 @@ vi.mock("@upstash/ratelimit", () => {
   return { Ratelimit };
 });
 
-import { checkRateLimit, getClientIdentifier } from "./rate-limit";
+import { checkRateLimit, checkRateLimitWithRetry, getClientIdentifier } from "./rate-limit";
 
 beforeEach(() => {
   vi.resetModules();
@@ -32,8 +32,20 @@ describe("checkRateLimit", () => {
   });
 
   it("blocks the request when over the limit", async () => {
-    mockLimit.mockResolvedValue({ success: false });
+    mockLimit.mockResolvedValue({ success: false, reset: Date.now() + 60_000 });
     await expect(checkRateLimit("applications", "1.2.3.4")).resolves.toBe(false);
+  });
+
+  it("returns the real remaining cooldown when the request is blocked", async () => {
+    const now = Date.now();
+    const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(now);
+    mockLimit.mockResolvedValue({ success: false, reset: now + 125_000 });
+
+    await expect(checkRateLimitWithRetry("verificationEmail", "uid-1")).resolves.toEqual({
+      allowed: false,
+      retryAfterSeconds: 125,
+    });
+    dateNowSpy.mockRestore();
   });
 
   it("fails open (allows) when Upstash is not configured, logging loudly", async () => {

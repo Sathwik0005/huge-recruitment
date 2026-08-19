@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase/config";
 import { getFirebaseErrorMessage } from "@/lib/firebase-error-messages";
@@ -10,6 +10,7 @@ import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +66,15 @@ export function LoginForm() {
 
   return (
     <div>
+      {searchParams.get("passwordReset") === "true" && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mb-6 text-label-md text-on-surface bg-surface-container-low rounded-lg px-4 py-3"
+        >
+          Your password has been reset successfully. You can now sign in with your new password.
+        </p>
+      )}
       <form className="space-y-6" onSubmit={handleSubmit} noValidate>
         {error && (
           <p

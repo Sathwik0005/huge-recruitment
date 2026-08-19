@@ -23,6 +23,17 @@ describe("ForgotPasswordForm", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it("shows an email-format error without calling the server", async () => {
+    const user = userEvent.setup();
+    render(<ForgotPasswordForm />);
+
+    await user.type(screen.getByLabelText("Email Address"), "not-an-email");
+    await user.click(screen.getByRole("button", { name: /send reset link/i }));
+
+    expect(await screen.findByText("Please enter a valid email address.")).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it("posts the email to /api/auth/forgot-password and shows the generic success message on a 200", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
     const user = userEvent.setup();
@@ -55,7 +66,7 @@ describe("ForgotPasswordForm", () => {
     expect(await screen.findByText(GENERIC_SUCCESS_MESSAGE)).toBeInTheDocument();
   });
 
-  it("shows the generic success message even on a genuine network failure (documented tradeoff: an outage looks identical to a nonexistent account)", async () => {
+  it("shows an honest connection error on a genuine network failure without revealing account existence", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network down"));
     const user = userEvent.setup();
     render(<ForgotPasswordForm />);
@@ -63,6 +74,21 @@ describe("ForgotPasswordForm", () => {
     await user.type(screen.getByLabelText("Email Address"), "real@example.com");
     await user.click(screen.getByRole("button", { name: /send reset link/i }));
 
-    expect(await screen.findByText(GENERIC_SUCCESS_MESSAGE)).toBeInTheDocument();
+    expect(await screen.findByText(/couldn't reach the server/i)).toBeInTheDocument();
+    expect(screen.queryByText(GENERIC_SUCCESS_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it("normalizes the submitted email", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true });
+    const user = userEvent.setup();
+    render(<ForgotPasswordForm />);
+
+    await user.type(screen.getByLabelText("Email Address"), "  REAL@Example.COM  ");
+    await user.click(screen.getByRole("button", { name: /send reset link/i }));
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/auth/forgot-password",
+      expect.objectContaining({ body: JSON.stringify({ email: "real@example.com" }) }),
+    );
   });
 });

@@ -3,7 +3,14 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-const NO_CHROME_PATHS = new Set(["/login", "/register", "/forgot-password", "/verify-email", "/reset-password"]);
+const NO_CHROME_PATHS = new Set([
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/verify-email",
+  "/reset-password",
+  "/auth/action",
+]);
 
 interface SiteChromeProps {
   header: ReactNode;

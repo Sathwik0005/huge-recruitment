@@ -3,11 +3,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 const refreshMock = vi.fn();
 let searchParamsValue = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock, refresh: refreshMock }),
   useSearchParams: () => searchParamsValue,
 }));
 
@@ -77,7 +78,7 @@ describe("ResetPasswordForm", () => {
     expect(mockConfirmPasswordReset).not.toHaveBeenCalled();
   });
 
-  it("submits via confirmPasswordReset and redirects to /login?passwordReset=true WITHOUT calling router.refresh (no session is minted here)", async () => {
+  it("submits via confirmPasswordReset and replaces the history entry with /login?passwordReset=true", async () => {
     mockVerifyPasswordResetCode.mockResolvedValue("ann@example.com");
     mockConfirmPasswordReset.mockResolvedValue(undefined);
     const user = userEvent.setup();
@@ -87,8 +88,9 @@ describe("ResetPasswordForm", () => {
     await user.type(screen.getByLabelText("Confirm New Password"), VALID_PASSWORD);
     await user.click(screen.getByRole("button", { name: /reset password/i }));
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login?passwordReset=true"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/login?passwordReset=true"));
     expect(mockConfirmPasswordReset).toHaveBeenCalledWith(expect.anything(), "abc123", VALID_PASSWORD);
+    expect(pushMock).not.toHaveBeenCalled();
     expect(refreshMock).not.toHaveBeenCalled();
   });
 
@@ -111,7 +113,7 @@ describe("ResetPasswordForm", () => {
     expect(screen.getByRole("button", { name: /resetting password/i })).toBeDisabled();
 
     resolveConfirm();
-    await waitFor(() => expect(pushMock).toHaveBeenCalled());
+    await waitFor(() => expect(replaceMock).toHaveBeenCalled());
     expect(mockConfirmPasswordReset).toHaveBeenCalledTimes(1);
   });
 });
