@@ -122,11 +122,9 @@ function VerifyEmailActionHandler({ oobCode }: { oobCode: string }) {
             return;
           }
         } catch {
-          setErrorMessage(
-            "We couldn't confirm your verification status right now. Please try signing in again.",
-          );
-          setState("session-error");
-          return;
+          // reload() itself failed, so we never actually confirmed
+          // verification succeeded — fall through to the real error below
+          // rather than claiming success.
         }
       }
       setErrorMessage(getFirebaseErrorMessage(err));

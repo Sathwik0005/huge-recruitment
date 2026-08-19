@@ -279,6 +279,27 @@ describe("VerifyEmailPage — action-code handler (mode=verifyEmail&oobCode=...)
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
+  it("regression: shows the real invalid-link error, not a false 'verified' state, when reload() itself throws while recovering an already-verified user", async () => {
+    searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "already-used" });
+    mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
+    mockApplyActionCode.mockRejectedValue({ code: "auth/invalid-action-code" });
+    const fakeUser = {
+      email: "ann@example.com",
+      emailVerified: false,
+      getIdToken: vi.fn(),
+    };
+    authMock.currentUser = fakeUser;
+    mockReload.mockRejectedValue(new Error("network blip"));
+
+    render(<VerifyEmailPage />);
+
+    expect(
+      await screen.findByText("This link is invalid or has already been used. Please request a new one."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Your email is verified")).not.toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
   it("does not issue a second applyActionCode() call for the same mounted instance (duplicate-effect guard)", async () => {
     searchParamsValue = new URLSearchParams({ mode: "verifyEmail", oobCode: "abc123" });
     mockCheckActionCode.mockResolvedValue({ data: { email: "ann@example.com" } });
