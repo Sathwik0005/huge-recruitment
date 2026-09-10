@@ -3,9 +3,10 @@ import Reveal from "@/components/Reveal";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact Us | Huge Recruitment",
+  title: "Contact Us",
   description:
     "Get in touch with Huge Recruitment — whether you're a candidate looking for your next role or an employer seeking top-tier industrial talent.",
+  alternates: { canonical: "/contact-us" },
 };
 
 const OFFICE_ADDRESS = "543, 1 Concourse Way, Sheffield City Centre, Acero, Sheffield S1 2BJ";

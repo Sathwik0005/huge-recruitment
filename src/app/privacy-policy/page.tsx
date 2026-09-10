@@ -1,3 +1,12 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "Read how Huge Recruitment collects, uses, and protects your personal information across our recruitment platform.",
+  alternates: { canonical: "/privacy-policy" },
+};
+
 export default function PrivacyPolicyPage() {
   return (
     <main className="flex-grow max-w-container-max mx-auto w-full px-gutter py-16">

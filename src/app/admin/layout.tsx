@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { requireAdminSession } from "@/lib/require-admin-session";
 import { AdminShell } from "./AdminShell";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const result = await requireAdminSession();

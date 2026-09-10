@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getPublicJobs, type JobFilters as JobFiltersType, type SortOption } from "@/lib/job-dto";
 import { SectorName, EmploymentType, PayPeriod, ShiftCategory } from "@/generated/prisma/enums";
@@ -6,6 +7,13 @@ import { JobFilters } from "./JobFilters";
 import { JobCard } from "./JobCard";
 import { JobPagination } from "./JobPagination";
 import { EmptyJobsState } from "./EmptyJobsState";
+
+export const metadata: Metadata = {
+  title: "Find Jobs",
+  description:
+    "Explore roles across production, warehousing, manufacturing, distribution and automotive workplaces.",
+  alternates: { canonical: "/jobs" },
+};
 
 function parseList<T extends string>(value: string | undefined, allowed: readonly T[]): T[] {
   if (!value) return [];

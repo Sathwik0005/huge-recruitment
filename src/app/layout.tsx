@@ -3,6 +3,7 @@ import { Hanken_Grotesk } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SiteChrome from "@/components/SiteChrome";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const hankenGrotesk = Hanken_Grotesk({
@@ -10,9 +11,33 @@ const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
 });
 
+const SITE_NAME = "Huge Recruitment";
+const SITE_DESCRIPTION = "Elevate your career with specialist guidance";
+
 export const metadata: Metadata = {
-  title: "Huge Recruitment",
-  description: "Elevate your career with specialist guidance",
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    siteName: SITE_NAME,
+    locale: "en_GB",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

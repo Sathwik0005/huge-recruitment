@@ -15,6 +15,8 @@ import {
 import { GuestApplicationForm } from "./GuestApplicationForm";
 import { SimilarJobs } from "./SimilarJobs";
 import { excerptFromOverview } from "@/lib/job-formatters";
+import { buildJobPostingJsonLd } from "@/lib/job-json-ld";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata({
   params,
@@ -26,12 +28,21 @@ export async function generateMetadata({
   if (!job) return { title: "Job not found" };
 
   const description = job.shortDescription || excerptFromOverview(job.overview, 160);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const canonicalUrl = `${getSiteUrl()}/jobs/${job.slug}`;
 
   return {
-    title: `${job.title} | Huge Recruitment`,
+    title: job.title,
     description,
-    alternates: appUrl ? { canonical: `${appUrl}/jobs/${job.slug}` } : undefined,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: job.title,
+      description,
+      url: canonicalUrl,
+      type: "website",
+    },
+    // Closed/paused jobs stay reachable (see getJobBySlugForDetailPage) but
+    // aren't worth ranking as if they were an open vacancy.
+    robots: job.isOpen ? undefined : { index: false, follow: true },
   };
 }
 
@@ -40,8 +51,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ slug
   const job = await getJobBySlugForDetailPage(slug);
   if (!job) notFound();
 
+  const jobPostingJsonLd = job.isOpen ? buildJobPostingJsonLd(job) : null;
+
   return (
     <main className="min-h-screen bg-background pb-16">
+      {jobPostingJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd).replace(/</g, "\\u003c") }}
+        />
+      )}
       <div className="mx-auto w-full max-w-container-max px-margin-mobile pt-6 md:px-margin-desktop md:pt-8">
         <nav aria-label="Breadcrumb" className="mb-6 overflow-x-auto">
           <ol className="flex min-w-max items-center gap-2 text-sm text-on-surface-variant">

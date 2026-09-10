@@ -4,9 +4,10 @@ import Reveal from "@/components/Reveal";
 import SectorRow from "./SectorRow";
 
 export const metadata: Metadata = {
-  title: "Our Sectors | Huge Recruitment",
+  title: "Our Sectors",
   description:
     "A premier UK recruitment partner specializing in delivering excellence across core industrial sectors — warehousing, manufacturing, distribution, automotive, and production.",
+  alternates: { canonical: "/sectors" },
 };
 
 interface SectorRowData {
