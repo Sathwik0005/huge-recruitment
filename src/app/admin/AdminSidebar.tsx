@@ -12,6 +12,9 @@ const NAV_ITEMS = [
   { href: "/admin/analytics", label: "Analytics", icon: "analytics" },
 ];
 
+/** Leaves the admin portal for the public site — opens in a new tab so the admin session/state here isn't lost. */
+const WEBSITE_LINK = { href: "/", label: "Website", icon: "language" };
+
 type AdminSidebarProps = {
   user: { firstName: string; email: string };
   mobileOpen: boolean;
@@ -59,6 +62,21 @@ function SidebarContent({ user, pathname, onNavigate }: { user: AdminSidebarProp
             </Link>
           );
         })}
+
+        <Link
+          href={WEBSITE_LINK.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 mt-2 pt-3 border-t border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+        >
+          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+            {WEBSITE_LINK.icon}
+          </span>
+          <span className="text-label-md">{WEBSITE_LINK.label}</span>
+          <span className="material-symbols-outlined text-[16px] ml-auto" aria-hidden="true">
+            open_in_new
+          </span>
+        </Link>
       </nav>
 
       <div className="mt-auto pt-4 border-t border-outline-variant px-2 space-y-3">
