@@ -136,7 +136,10 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Failed to create job application", error);
+    console.error("Failed to create job application", {
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }
