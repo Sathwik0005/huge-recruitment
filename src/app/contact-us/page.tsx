@@ -3,9 +3,9 @@ import Reveal from "@/components/Reveal";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact Us | Huge Requirements Limited",
+  title: "Contact Us | Huge Recruitment",
   description:
-    "Get in touch with Huge Requirements Limited — whether you're a candidate looking for your next role or an employer seeking top-tier industrial talent.",
+    "Get in touch with Huge Recruitment — whether you're a candidate looking for your next role or an employer seeking top-tier industrial talent.",
 };
 
 const OFFICE_ADDRESS = "543, 1 Concourse Way, Sheffield City Centre, Acero, Sheffield S1 2BJ";
@@ -69,7 +69,7 @@ export default function ContactUsPage() {
                       location_on
                     </span>
                     <div className="font-body-md text-body-md text-white/85 space-y-0.5">
-                      <p className="font-semibold text-white">Huge Requirements Limited</p>
+                      <p className="font-semibold text-white">Huge Recruitment</p>
                       <p>543, 1 Concourse Way</p>
                       <p>Sheffield City Centre, Acero</p>
                       <p>Sheffield S1 2BJ</p>
@@ -78,17 +78,17 @@ export default function ContactUsPage() {
                   <div className="flex items-center gap-4">
                     <span className="material-symbols-outlined text-employer-accent">mail</span>
                     <a
-                      href="mailto:info@hugerequirements.co.uk"
+                      href="mailto:info@hugerecruitment.co.uk"
                       className="font-body-md text-body-md text-white/85 hover:text-white break-all"
                     >
-                      info@hugerequirements.co.uk
+                      info@hugerecruitment.co.uk
                     </a>
                   </div>
                 </div>
 
                 <div className="relative flex-1 min-h-80 rounded-2xl overflow-hidden border border-outline-variant shadow-[0_4px_16px_rgba(2,36,72,0.06)]">
                   <iframe
-                    title="Map showing Huge Requirements Limited office location"
+                    title="Map showing Huge Recruitment office location"
                     src={MAPS_EMBED_URL}
                     className="absolute inset-0 w-full h-full grayscale-[0.15] contrast-[1.05]"
                     style={{ border: 0 }}

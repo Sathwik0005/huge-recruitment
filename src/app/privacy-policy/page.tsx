@@ -9,8 +9,9 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-headline-md text-on-surface mb-3">1. Introduction</h2>
             <p className="text-body-md text-on-surface-variant">
-              This Privacy Policy explains how Huge Requirements Limited (&quot;we&quot;, &quot;us&quot;) collects, uses,
-              and protects your personal information when you use our recruitment platform.
+              This Privacy Policy explains how HUGE RECRUITMENT LIMITED (company number 17321402)
+              (&quot;we&quot;, &quot;us&quot;) collects, uses, and protects your personal information when you use our
+              recruitment platform.
             </p>
           </section>
 

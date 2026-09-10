@@ -4,7 +4,7 @@ import EmployerRequestForm from "./EmployerRequestForm";
 import PartnershipModelCard from "./PartnershipModelCard";
 
 export const metadata: Metadata = {
-  title: "Employer Services | Huge Requirements Limited",
+  title: "Employer Services | Huge Recruitment",
   description:
     "Elite industrial workforce solutions — temporary staffing, permanent placement, and managed services across the UK's industrial sectors.",
 };
@@ -179,7 +179,7 @@ export default function EmployersPage() {
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
           <Reveal className="mb-12 text-center max-w-2xl mx-auto">
             <h2 className="font-headline-lg text-headline-lg text-primary mb-4">
-              Why Choose Huge Requirements Limited
+              Why Choose Huge Recruitment
             </h2>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
               Unmatched reliability and industrial expertise driving operational excellence.

@@ -418,7 +418,7 @@ export default async function HomePage() {
           </h2>
           <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-12">
             Whether you&apos;re looking to build an elite team or take the next
-            step in your professional career, Huge Requirements Limited is your
+            step in your professional career, Huge Recruitment is your
             strategic partner.
           </p>
           <div className="flex flex-col md:flex-row justify-center gap-4">

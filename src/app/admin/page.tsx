@@ -53,7 +53,7 @@ export default async function AdminDashboardPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-headline-lg text-primary">Overview</h1>
-        <p className="text-body-md text-on-surface-variant mt-1">Huge Requirements Limited — Key Metrics</p>
+        <p className="text-body-md text-on-surface-variant mt-1">Huge Recruitment — Key Metrics</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

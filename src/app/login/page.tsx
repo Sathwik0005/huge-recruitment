@@ -22,7 +22,7 @@ export default async function LoginPage() {
           </Suspense>
           <div className="mt-8 text-center">
             <p className="text-body-md text-secondary">
-              New to Huge Requirements Limited?{" "}
+              New to Huge Recruitment?{" "}
               <a className="text-primary font-bold hover:underline" href="/register">
                 Register now
               </a>

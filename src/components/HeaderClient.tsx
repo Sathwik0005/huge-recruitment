@@ -40,8 +40,8 @@ export default function HeaderClient({ isLoggedIn, isAdmin }: HeaderClientProps)
             hosted URL directly.
           */}
           <img
-            src="https://res.cloudinary.com/uhfrtle0/image/upload/v1786575206/company_logo_new.png"
-            alt="Huge Requirements Limited"
+            src="https://res.cloudinary.com/uhfrtle0/image/upload/v1789031745/company_logo.png"
+            alt="Huge Recruitment"
             className="h-full w-auto object-contain"
           />
         </Link>

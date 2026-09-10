@@ -14,8 +14,8 @@ export default function Footer() {
       <div className="w-full py-stack-lg px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter max-w-container-max mx-auto">
         <div className="space-y-4">
           <img
-            src="https://res.cloudinary.com/uhfrtle0/image/upload/v1786575206/company_logo_new.png"
-            alt="Huge Requirements Limited"
+            src="https://res.cloudinary.com/uhfrtle0/image/upload/v1789031745/company_logo.png"
+            alt="Huge Recruitment"
             className="h-20 w-auto object-contain"
           />
           <p className="text-body-md opacity-70">
@@ -64,7 +64,7 @@ export default function Footer() {
             <br />
             Sheffield S1 2BJ
           </p>
-          <p className="text-body-md opacity-70">info@hugerequirements.co.uk</p>
+          <p className="text-body-md opacity-70">info@hugerecruitment.co.uk</p>
         </div>
       </div>
 
