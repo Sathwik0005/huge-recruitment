@@ -74,7 +74,7 @@ describe("sendCandidateApplicationConfirmation", () => {
     email: "jane@example.com",
   };
 
-  it("sends via Resend to the candidate's own email", async () => {
+  it("sends via Resend to the candidate's own email, with an HTML and text part", async () => {
     await sendCandidateApplicationConfirmation(CONFIRMATION_INPUT);
     expect(mockSend).toHaveBeenCalledTimes(1);
     const call = mockSend.mock.calls[0][0];
@@ -82,6 +82,8 @@ describe("sendCandidateApplicationConfirmation", () => {
     expect(call.from).toBe("noreply@example.com");
     expect(call.html).toContain("Jane Doe");
     expect(call.html).toContain("APP-ABC123");
+    expect(call.text).toContain("Jane Doe");
+    expect(call.text).toContain("APP-ABC123");
   });
 
   it("HTML-escapes a candidate name containing a script tag", async () => {
@@ -91,14 +93,14 @@ describe("sendCandidateApplicationConfirmation", () => {
     expect(call.html).toContain("&lt;script&gt;");
   });
 
-  it("does not throw when Resend is not configured, and skips sending", async () => {
+  it("does not throw when Resend is not configured, and reports failure", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
-    await expect(sendCandidateApplicationConfirmation(CONFIRMATION_INPUT)).resolves.toBeUndefined();
+    await expect(sendCandidateApplicationConfirmation(CONFIRMATION_INPUT)).resolves.toBe(false);
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("does not throw when the Resend API call itself fails", async () => {
+  it("does not throw when the Resend API call itself fails, and reports failure", async () => {
     mockSend.mockRejectedValue(new Error("Resend is down"));
-    await expect(sendCandidateApplicationConfirmation(CONFIRMATION_INPUT)).resolves.toBeUndefined();
+    await expect(sendCandidateApplicationConfirmation(CONFIRMATION_INPUT)).resolves.toBe(false);
   });
 });

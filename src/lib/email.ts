@@ -1,6 +1,7 @@
 import "server-only";
 import { Resend } from "resend";
 import { escapeHtml } from "@/lib/html-escape";
+import { renderBrandedEmailHtml, renderBrandedEmailText, send, type SendResult } from "@/lib/email-template";
 
 type ApplicationNotificationInput = {
   applicationId: string;
@@ -13,14 +14,6 @@ type ApplicationNotificationInput = {
   location: string;
 };
 
-/**
- * Sends the admin/recruitment team a new-application notification. Never
- * attaches the CV or includes a public/signed CV URL — admins download CVs
- * through the authenticated admin route. Escapes every candidate-controlled
- * value before interpolating into the HTML body. A send failure is the
- * caller's concern to swallow (see src/app/api/applications/route.ts) — it
- * must never roll back an already-persisted application.
- */
 export async function sendAdminApplicationNotification(input: ApplicationNotificationInput): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
@@ -74,41 +67,20 @@ type ApplicationConfirmationInput = {
 
 /**
  * Sends the candidate a confirmation that their application was received.
- * Mirrors sendAdminApplicationNotification's send-failure handling — never
- * rolls back an already-persisted application, just logs and swallows.
+ * Uses the same branded template as sendWelcomeEmail (src/lib/auth-email.ts).
  */
 export async function sendCandidateApplicationConfirmation(
   input: ApplicationConfirmationInput
-): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  if (!apiKey || !from) {
-    console.error("Resend is not configured; skipping candidate application confirmation", {
-      applicationId: input.applicationId,
-    });
-    return;
-  }
+): Promise<SendResult> {
+  const heading = "Application received";
+  const bodyHtml = `Hi ${escapeHtml(input.fullName)}, thanks for applying for <strong>${escapeHtml(input.jobTitle)}</strong> — we've received your application. Your reference number is <strong>${escapeHtml(input.publicReference)}</strong>, please keep this for your records. Our team will review your application and be in touch if you're shortlisted.`;
+  const bodyText = `Hi ${input.fullName}, thanks for applying for ${input.jobTitle} — we've received your application. Your reference number is ${input.publicReference}, please keep this for your records. Our team will review your application and be in touch if you're shortlisted.`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
-  const resend = new Resend(apiKey);
-
-  const html = `
-    <p>Hi ${escapeHtml(input.fullName)},</p>
-    <p>Thanks for applying for <strong>${escapeHtml(input.jobTitle)}</strong>. We've received your application.</p>
-    <p>Your reference number is <strong>${escapeHtml(input.publicReference)}</strong> — please keep this for your records.</p>
-    <p>Our team will review your application and be in touch if you're shortlisted.</p>
-  `;
-
-  try {
-    await resend.emails.send({
-      from,
-      to: input.email,
-      subject: `Application received: ${input.jobTitle}`,
-      html,
-    });
-  } catch (error) {
-    console.error("Failed to send candidate application confirmation", {
-      applicationId: input.applicationId,
-      errorClass: error instanceof Error ? error.constructor.name : typeof error,
-    });
-  }
+  return send("candidate application confirmation", {
+    to: input.email,
+    subject: `Application received: ${input.jobTitle}`,
+    html: renderBrandedEmailHtml({ heading, bodyHtml, bodyText, ctaLabel: appUrl ? "Browse more jobs" : undefined, ctaUrl: appUrl ? `${appUrl}/jobs` : undefined }),
+    text: renderBrandedEmailText({ heading, bodyHtml, bodyText, ctaLabel: appUrl ? "Browse more jobs" : undefined, ctaUrl: appUrl ? `${appUrl}/jobs` : undefined }),
+  });
 }

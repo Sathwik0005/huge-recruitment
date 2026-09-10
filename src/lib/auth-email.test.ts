@@ -13,7 +13,7 @@ import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetLinkEmail } f
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("RESEND_API_KEY", "test-key");
-  vi.stubEnv("RESEND_FROM_EMAIL", "Huge Requirements Limited <info@hugerequirements.co.uk>");
+  vi.stubEnv("RESEND_FROM_EMAIL", "Huge Recruitment <info@hugerecruitment.co.uk>");
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
   mockSend.mockResolvedValue({ data: { id: "email-1" }, error: null });
 });
@@ -25,7 +25,7 @@ describe("sendVerificationEmail", () => {
     expect(mockSend).toHaveBeenCalledTimes(1);
     const [payload] = mockSend.mock.calls[0];
     expect(payload.to).toBe("ann@example.com");
-    expect(payload.from).toBe("Huge Requirements Limited <info@hugerequirements.co.uk>");
+    expect(payload.from).toBe("Huge Recruitment <info@hugerecruitment.co.uk>");
     expect(payload.html).toContain("https://example.test/verify-email?oobCode=abc");
     expect(payload.text).toContain("https://example.test/verify-email?oobCode=abc");
   });
