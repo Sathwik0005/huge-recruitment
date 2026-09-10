@@ -4,7 +4,7 @@ import { escapeHtml } from "@/lib/html-escape";
 
 export const BRAND_NAME = "Huge Recruitment";
 export const LOGO_URL =
-  "https://res.cloudinary.com/uhfrtle0/image/upload/v1786575206/company_logo_new.png";
+  "https://res.cloudinary.com/uhfrtle0/image/upload/v1789031745/company_logo.png";
 const COLOR_PRIMARY = "#022448";
 const COLOR_ON_PRIMARY = "#ffffff";
 const COLOR_BACKGROUND = "#f8f9ff";
