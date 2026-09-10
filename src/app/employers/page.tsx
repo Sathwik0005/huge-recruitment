@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Reveal from "@/components/Reveal";
 import EmployerRequestForm from "./EmployerRequestForm";
 import PartnershipModelCard from "./PartnershipModelCard";
 
 export const metadata: Metadata = {
-  title: "Employer Services | Huge Recruitment",
+  title: "Employer Services",
   description:
     "Elite industrial workforce solutions — temporary staffing, permanent placement, and managed services across the UK's industrial sectors.",
+  alternates: { canonical: "/employers" },
 };
 
 const WHY_CHOOSE_US = [
@@ -245,10 +247,12 @@ export default function EmployersPage() {
                 delay={index * 100}
                 className="relative h-62.5 rounded-lg overflow-hidden group"
               >
-                <img
+                <Image
                   src={sector.image}
                   alt={sector.title}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  fill
+                  sizes="(min-width: 768px) 20vw, 100vw"
+                  className="object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-inverse-surface/90 to-transparent" />
                 <div className="absolute bottom-0 left-0 p-4">

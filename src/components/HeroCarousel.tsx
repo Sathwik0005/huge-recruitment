@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface HeroSlide {
   src: string;
@@ -37,11 +38,14 @@ export default function HeroCarousel() {
   return (
     <div className="absolute inset-0 z-0 overflow-hidden">
       {HERO_SLIDES.map((slide, slideIndex) => (
-        <img
+        <Image
           key={slide.src}
           src={slide.src}
           alt={slide.alt}
-          className={`absolute inset-0 w-full h-full object-cover object-[75%_center] md:object-center transition-opacity duration-1000 ease-in-out ${
+          fill
+          sizes="100vw"
+          priority={slideIndex === 0}
+          className={`object-cover object-[75%_center] md:object-center transition-opacity duration-1000 ease-in-out ${
             slideIndex === index ? "opacity-100" : "opacity-0"
           }`}
         />

@@ -1,10 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import HeroCarousel from "@/components/HeroCarousel";
 import Reveal from "@/components/Reveal";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 import HeroSearch from "./HeroSearch";
 import { getFeaturedJobs } from "@/lib/job-dto";
 import { formatJobLocation, formatJobPay, formatEmploymentType } from "@/lib/job-formatters";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 type SectorVariant = "featured" | "overlay" | "light";
 
@@ -202,8 +208,8 @@ export default async function HomePage() {
           </p>
         </Reveal>
       </section>
-      <section className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-0 pb-xxl">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <section className="pt-0 pb-xxl">
+        <div className="max-w-container-max mx-auto grid grid-cols-1 px-margin-mobile md:grid-cols-12 md:px-margin-desktop gap-6">
           {SECTORS.map((sector, sectorIndex) => (
             <Reveal
               key={sector.title}
@@ -215,11 +221,13 @@ export default async function HomePage() {
                 aria-label={`View the ${sector.title} sector`}
                 className="absolute inset-0 z-20"
               />
-              <div className={`${sector.height} w-full overflow-hidden`}>
-                <img
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              <div className={`${sector.height} relative w-full overflow-hidden`}>
+                <Image
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                   alt={sector.alt}
                   src={sector.image}
+                  fill
+                  sizes="(min-width: 768px) 33vw, 100vw"
                 />
               </div>
 

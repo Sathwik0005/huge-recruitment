@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 interface SectorRowProps {
   id: string;
@@ -167,10 +168,12 @@ export default function SectorRow({
               visible ? "sector-image-in" : ""
             }`}
           >
-            <img
+            <Image
               alt={alt}
-              className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
+              className="object-cover object-center transition-transform duration-700 hover:scale-105"
               src={image}
+              fill
+              sizes="(min-width: 768px) 50vw, 100vw"
             />
             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl pointer-events-none" />
           </div>

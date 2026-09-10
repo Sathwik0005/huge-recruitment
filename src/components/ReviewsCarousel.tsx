@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 
 interface Review {
   quote: string;
@@ -56,12 +57,14 @@ export default function ReviewsCarousel() {
     <div className="relative mx-0 lg:ml-28 bg-[#1E88D8] rounded-lg shadow-2xl p-6 lg:p-12">
       <div className="grid lg:grid-cols-[320px_1fr] items-center gap-6 lg:gap-10">
         <div className="relative lg:-ml-40 z-20">
-          <div className="overflow-hidden rounded-lg shadow-2xl border-4 border-white">
-            <img
+          <div className="relative h-[220px] lg:h-[280px] w-full overflow-hidden rounded-lg shadow-2xl border-4 border-white">
+            <Image
               key={review.image}
               src={review.image}
               alt={review.name}
-              className="w-full h-[220px] lg:h-[280px] object-cover animate-[fade-in_0.5s_ease-out]"
+              fill
+              sizes="(min-width: 1024px) 320px, 100vw"
+              className="object-cover animate-[fade-in_0.5s_ease-out]"
             />
           </div>
         </div>
