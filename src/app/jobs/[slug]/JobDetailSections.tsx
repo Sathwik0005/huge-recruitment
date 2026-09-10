@@ -25,8 +25,8 @@ export function ResponsibilitiesSection({ job }: { job: PublicJob }) {
     <SectionCard>
       <SectionHeading>What you&rsquo;ll be doing</SectionHeading>
       <ul className="space-y-3">
-        {job.responsibilities.map((entry) => (
-          <li key={entry.text} className="flex items-start gap-3 text-on-surface-variant">
+        {job.responsibilities.map((entry, index) => (
+          <li key={index} className="flex items-start gap-3 text-on-surface-variant">
             <span aria-hidden="true" className="material-symbols-outlined mt-0.5 shrink-0 text-[19px] text-secondary">
               check_circle
             </span>
@@ -44,8 +44,8 @@ export function RequirementsSection({ job }: { job: PublicJob }) {
     <SectionCard>
       <SectionHeading>What we&rsquo;re looking for</SectionHeading>
       <ul className="space-y-3">
-        {job.requirements.map((entry) => (
-          <li key={entry.text} className="flex items-start gap-3 text-on-surface-variant">
+        {job.requirements.map((entry, index) => (
+          <li key={index} className="flex items-start gap-3 text-on-surface-variant">
             <span aria-hidden="true" className="material-symbols-outlined mt-0.5 shrink-0 text-[19px] text-secondary">
               person_check
             </span>
@@ -107,8 +107,8 @@ export function BenefitsSection({ job }: { job: PublicJob }) {
     <SectionCard>
       <SectionHeading>What&rsquo;s included</SectionHeading>
       <ul className="grid gap-2 sm:grid-cols-2">
-        {job.benefits.map((entry) => (
-          <li key={entry.text} className="flex min-h-12 items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-on-surface-variant">
+        {job.benefits.map((entry, index) => (
+          <li key={index} className="flex min-h-12 items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-on-surface-variant">
             <span aria-hidden="true" className="material-symbols-outlined shrink-0 text-[19px] text-secondary">
               verified
             </span>
