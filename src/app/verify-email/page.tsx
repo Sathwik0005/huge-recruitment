@@ -239,6 +239,7 @@ function CheckEmailState({ initialSendFailed = false }: { initialSendFailed?: bo
   const router = useRouter();
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [resending, setResending] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   // The account was created, but the initial verification email genuinely
@@ -289,6 +290,24 @@ function CheckEmailState({ initialSendFailed = false }: { initialSendFailed?: bo
     }
   }
 
+  async function handleCheckVerified() {
+    if (!auth.currentUser || checking) return;
+    setChecking(true);
+    setMessage(null);
+    try {
+      await reload(auth.currentUser);
+      if (auth.currentUser.emailVerified) {
+        router.push("/login");
+        return;
+      }
+      setMessage("Your email isn't verified yet. Please click the link in your email first.");
+    } catch {
+      setMessage("Something went wrong. Please try again.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
   if (user === undefined) return null;
 
   return (
@@ -323,6 +342,15 @@ function CheckEmailState({ initialSendFailed = false }: { initialSendFailed?: bo
             className="w-full h-12 bg-primary text-on-primary text-body-md font-bold rounded-lg hover:bg-secondary hover:text-on-secondary transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {cooldown > 0 ? `Resend available in ${cooldown}s` : resending ? "Sending..." : "Resend Email"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCheckVerified}
+            disabled={checking}
+            className="w-full h-12 mt-3 border border-outline-variant text-primary text-body-md font-bold rounded-lg hover:bg-surface-container transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {checking ? "Checking..." : "I have verified"}
           </button>
 
         </div>
