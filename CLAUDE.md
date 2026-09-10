@@ -2,10 +2,11 @@
 
 # Project Overview
 
-huge-recruitment is a recruitment/hiring platform. The project is currently at the **auth-foundation
-stage**: registration, email verification, login, forgot/reset password, session handling, and basic
-route protection all exist. No jobs, candidates, applications, or recruiter/admin features exist yet —
-those are future work, added incrementally via the `/create-spec` step-roadmap workflow (see below).
+huge-recruitment is a recruitment/hiring platform. Auth foundation (registration, email verification,
+login, forgot/reset password, session handling) is done, and the jobs/applications platform (spec 03)
+and admin panel (spec 04) are also built — see `.claude/rules/database.md` for the current schema.
+Further feature areas continue to be added incrementally via the `/create-spec` step-roadmap workflow
+(see below).
 
 This is a young, actively-growing codebase, not a rebuild. Existing auth behavior, session handling,
 and page structure should be preserved unless a task explicitly authorises a change.
@@ -16,9 +17,9 @@ and page structure should be preserved unless a task explicitly authorises a cha
 - **Styling:** Tailwind CSS v4, CSS-first `@theme` config in `src/app/globals.css` — no `tailwind.config.js`
 - **Database:** PostgreSQL (Neon serverless) via **Prisma 7.9.1** + `@prisma/adapter-neon` — `prisma/schema.prisma` is the single source of truth; generated client output is customized to `src/generated/prisma` (import from `@/generated/prisma/client`, not `@prisma/client`)
 - **Auth:** Firebase Auth — client SDK (`firebase`) for sign-up/sign-in, `firebase-admin` server-side for session-cookie verification. **Not** NextAuth, **not** a custom JWT scheme.
-- **Email:** Firebase's own built-in flows (`sendEmailVerification`, `sendPasswordResetEmail`) — no Resend/nodemailer/third-party email provider
-- **Validation:** no library adopted project-wide yet (Zod is present only as a transitive dependency, not used in `src/`) — routes currently do manual validation; flag thin validation as a gap, don't assume Zod is the convention
-- **Testing (installed, not yet configured):** `vitest`, `@testing-library/react`, `@testing-library/user-event`, `@playwright/test` are devDependencies, but no `vitest.config.mts`, no `playwright.config.ts`, no `test`/`test:e2e` npm scripts, and no test files exist yet
+- **Email:** **Resend** (`src/lib/email.ts`, `src/lib/auth-email.ts`) sends every outbound email — verification, password-reset, welcome, and job-application emails. `firebase-admin` is used only to *generate* the underlying Firebase action links (`src/lib/firebase-action-link.ts`); it does not send anything itself. Not Firebase's built-in `sendEmailVerification`/`sendPasswordResetEmail` flows.
+- **Validation:** Zod is used project-wide for request validation (e.g. `src/lib/validation/application.ts`), not just a transitive dependency.
+- **Testing:** `vitest` and `@playwright/test` are configured — `npm run test` / `npm run test:e2e` are wired in `package.json`, and test files exist throughout `src/`.
 
 # Project Architecture
 
@@ -54,10 +55,11 @@ required (forms, `LogoutButton`). No route groups exist yet. No `loading.tsx`, `
 `not-found.tsx` exist anywhere in `src/app`.
 
 **`src/proxy.ts`** is Next.js 16's replacement for `middleware.ts`. It currently does an **edge
-cookie-presence check only** (not full session verification) and guards just `/`, redirecting to
+cookie-presence check only** (not full session verification) and guards `/admin/**`, redirecting to
 `/login` if the session cookie is absent. This is not a substitute for server-side verification —
-any route/page that returns or mutates user data must independently verify the session via
-`require-verified-session.ts`/`getSession`.
+`src/app/admin/layout.tsx` independently re-verifies the session and admin role via
+`require-admin-session.ts`, and any other route/page that returns or mutates user data must do the
+same via `require-verified-session.ts`/`getSession`.
 
 # Where Things Live
 
@@ -92,7 +94,7 @@ any route/page that returns or mutates user data must independently verify the s
 
 - **Prisma is the sole DB access path** — no raw `pg`/another client, and no `$queryRawUnsafe`/string-built SQL with user input; use the generated typed client or parameterized `$queryRaw`.
 - **Firebase Auth is the sole auth mechanism** — no NextAuth, no custom JWT scheme, no parallel session system alongside Firebase's session cookie.
-- Firebase's built-in email flows are the sole email mechanism — no Resend/nodemailer without explicit approval.
+- **Resend is the sole email mechanism** — no nodemailer or a second provider without explicit approval.
 - Do not add another CSS framework, UI kit, ORM, or state-management library without asking first.
 
 # Setup & Run Commands
@@ -105,14 +107,15 @@ npm start        # run production build
 npm run lint     # ESLint
 ```
 
-No `test`/`test:e2e` script exists yet — `test-writer`/`e2e-test-writer` (see `.claude/agents/`) will
-report this and stop rather than silently bootstrapping config; setting up Vitest/Playwright config is
-an explicit, separately-approved step. Copy `.env.example` to `.env.local` and fill in real values
-before running `dev`/`build`. Current variables (names only): `DATABASE_URL`,
-`NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`,
-`NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`,
-`NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`, `FIREBASE_ADMIN_PROJECT_ID`,
-`FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`, `NEXT_PUBLIC_APP_URL`.
+`npm run test` (Vitest) and `npm run test:e2e` (Playwright) are configured and runnable. Copy
+`.env.example` to `.env.local` and fill in real values before running `dev`/`build`. Current variables
+(names only): `DATABASE_URL`, `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`,
+`NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`,
+`NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`,
+`NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`, `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`,
+`FIREBASE_ADMIN_PRIVATE_KEY`, `NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`,
+`RESEND_ADMIN_NOTIFICATION_EMAIL`, `BLOB_READ_WRITE_TOKEN`, `UPSTASH_REDIS_REST_URL`,
+`UPSTASH_REDIS_REST_TOKEN`.
 
 **Whenever a new secret or env var is introduced**, add its name (no value) to `.env.example` in the
 same change, and explicitly tell the user they need to add the real value to their local `.env.local`
@@ -134,10 +137,10 @@ Features are tracked as a step-numbered roadmap, not a bug backlog:
 | Register / verify-email / login / forgot-password | Pages | Done (foundation) | Firebase-backed; see `PROJECT_FOUNDATION_BLUEPRINT.md` for original scope |
 | `/` (public homepage) | Page | Done | Public marketing homepage (spec 02); Header/Footer render site-wide from `src/app/layout.tsx` |
 | Session handling | Cross-cutting | Done (foundation) | `src/lib/session.ts` + `src/firebase/admin.ts` |
-| Route protection | Cross-cutting | None | `src/proxy.ts`'s `PROTECTED_PATHS` is empty — `/` became public in spec 02; edge presence-check + server-side verification should be added back once a protected route (e.g. a future dashboard) exists |
-| Test infrastructure (Vitest/Playwright config) | Cross-cutting | Not started | Deps installed, no config/scripts yet |
-| Jobs / candidates / applications | Feature area | Not started | Greenfield — next roadmap steps |
-| Admin/recruiter role & dashboard | Feature area | Not started | No `role`-based access control beyond the `Role` enum on `User` existing in schema |
+| Route protection | Cross-cutting | Done | `src/proxy.ts` guards `/admin/**` (edge presence-check) plus server-side re-verification via `require-admin-session.ts` in `src/app/admin/layout.tsx` |
+| Test infrastructure (Vitest/Playwright config) | Cross-cutting | Done | `npm run test` / `npm run test:e2e` configured and wired |
+| Jobs / applications | Feature area | Done (spec 03) | Public `/jobs`, `/jobs/[slug]`, guest applications with CV upload — see `.claude/rules/database.md` |
+| Admin/recruiter role & dashboard | Feature area | Done (spec 03/04) | `/admin/**` (dashboard, candidates, jobs, clients, analytics), gated by `Role`/`UserStatus` via `require-admin-session.ts` |
 
 # Warnings & Things to Avoid
 
