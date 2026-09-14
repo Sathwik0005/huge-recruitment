@@ -1,26 +1,26 @@
 import "server-only";
 import { S3Client } from "@aws-sdk/client-s3";
-import { fromWebToken } from "@aws-sdk/credential-provider-web-identity";
-import type { AwsCredentialIdentity } from "@aws-sdk/types";
+import { awsCredentialsProvider } from "@vercel/functions/oidc";
 
 /**
  * Reusable S3 client for authenticated candidate-onboarding documents
  * (passport, right-to-work, etc.). Entirely separate from the anonymous
  * job-application CV flow, which stays on Vercel Blob — see src/lib/blob.ts.
  *
- * Credentials come from Vercel OIDC federation: VERCEL_OIDC_TOKEN (injected
- * automatically by Vercel in the Production environment) is exchanged for
- * temporary AWS credentials via sts:AssumeRoleWithWebIdentity against
- * AWS_ROLE_ARN (HugeRecruitmentVercelS3Role). No AWS access keys or other
- * long-lived secrets are used or stored anywhere.
+ * Credentials come from Vercel's OIDC federation, via `awsCredentialsProvider`
+ * (Vercel's recommended integration for this): it fetches the current
+ * Vercel OIDC identity token itself and exchanges it for temporary AWS
+ * credentials via sts:AssumeRoleWithWebIdentity against AWS_ROLE_ARN
+ * (HugeRecruitmentVercelS3Role). No AWS access keys, and no manual reading of
+ * VERCEL_OIDC_TOKEN, are used anywhere.
  *
- * Region/bucket/role/token are all read lazily, only when an S3 operation is
+ * Region/bucket/role are all read lazily, only when an S3 operation is
  * actually attempted — importing this module never throws, so it stays safe
  * to import during `next build` or local `next dev`. The IAM role's trust
  * policy is intentionally scoped to the Vercel Production environment only,
  * so local development cannot authenticate to S3; calling any exported
- * function locally without VERCEL_OIDC_TOKEN set fails with a clear error
- * rather than falling back to an unsafe or fake credential source.
+ * function locally fails with a clear error from the credential exchange
+ * itself rather than falling back to an unsafe or fake credential source.
  */
 
 /** Every candidate-document object must live under this prefix — matches the IAM policy's `candidates/*` scope. */
@@ -36,16 +36,6 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-/** Exchanges the current Vercel OIDC token for temporary AWS credentials on every call — never cached across requests, since VERCEL_OIDC_TOKEN is refreshed per invocation. */
-async function getCredentials(): Promise<AwsCredentialIdentity> {
-  const provider = fromWebToken({
-    roleArn: requiredEnv("AWS_ROLE_ARN"),
-    webIdentityToken: requiredEnv("VERCEL_OIDC_TOKEN"),
-    roleSessionName: "huge-recruitment-s3",
-  });
-  return provider();
-}
-
 /** The configured candidate-documents bucket name. Throws if AWS_S3_BUCKET is unset. */
 export function getS3Bucket(): string {
   return requiredEnv("AWS_S3_BUCKET");
@@ -58,7 +48,10 @@ export function getS3Client(): S3Client {
   if (!s3Client) {
     s3Client = new S3Client({
       region: async () => requiredEnv("AWS_REGION"),
-      credentials: getCredentials,
+      credentials: awsCredentialsProvider({
+        roleArn: requiredEnv("AWS_ROLE_ARN"),
+        roleSessionName: "huge-recruitment-s3",
+      }),
     });
   }
   return s3Client;
