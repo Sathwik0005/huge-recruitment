@@ -8,12 +8,19 @@ import type { NextConfig } from "next";
 // (https://vercel.com/api/blob — see node_modules/@vercel/blob's
 // `defaultVercelBlobApiUrl`), not the `*.blob.vercel-storage.com` read/storage
 // domain, so that's the host that must be allowed here.
+// Google sign-in (`signInWithPopup` + `GoogleAuthProvider`, see
+// src/hooks/useGoogleSignIn.ts) additionally loads Google's GApi popup/iframe
+// relay: a `<script>` from https://apis.google.com/js/api.js and a hidden
+// iframe served from https://apis.google.com used for postMessage relay
+// between the popup and the opener. Without apis.google.com in both
+// script-src and frame-src, the browser blocks that script/iframe and the
+// popup flow fails client-side before Firebase ever gets a credential.
 // Next's dev-mode bundler (Turbopack/Fast Refresh) relies on eval() for
 // on-the-fly source maps and hot-reload — blocking it under CSP breaks
 // hydration entirely in `next dev` (React logs a fatal "eval() is not
 // supported" console error and the page never finishes rendering). Production
 // builds never call eval(), so 'unsafe-eval' is scoped to development only.
-const SCRIPT_SRC = `'self' 'unsafe-inline'${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`;
+const SCRIPT_SRC = `'self' 'unsafe-inline' https://apis.google.com${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`;
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
@@ -23,7 +30,7 @@ const CSP_DIRECTIVES = [
   "img-src 'self' data: https://res.cloudinary.com https://media.istockphoto.com https://thumbs.dreamstime.com",
   "media-src 'self' https://res.cloudinary.com",
   "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://huge-recruitment.firebaseapp.com https://vercel.com https://*.public.blob.vercel-storage.com",
-  "frame-src 'self' https://huge-recruitment.firebaseapp.com https://accounts.google.com https://www.google.com",
+  "frame-src 'self' https://huge-recruitment.firebaseapp.com https://accounts.google.com https://www.google.com https://apis.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
