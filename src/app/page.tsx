@@ -98,7 +98,7 @@ const SECTORS: Sector[] = [
     description:
       "Tailored workforce solutions for high-output production environments and technical lines.",
     image:
-      "https://media.istockphoto.com/id/1204069369/photo/group-of-students-in-an-engineering-class-looking-at-the-teacher.jpg?s=2048x2048&w=is&k=20&c=32sby6950eelHjZ1yjICb4_h9k8X227r7Cs8vwFR8xs=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1789137196/production.webp",
     alt: "Production environment",
     colSpan: "md:col-span-4",
     height: "h-[450px]",
