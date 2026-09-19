@@ -11,6 +11,11 @@ const referralSourceValues = [
   "JOBCENTRE_PLUS",
   "OTHER",
 ] as const;
+const availabilityToStartValues = ["IMMEDIATE", "NEXT_WEEK", "TWO_TO_THREE_WEEKS", "FOUR_WEEKS_PLUS"] as const;
+// Reuses the jobs platform's existing sector taxonomy (see `Sector`/`SectorName`
+// in prisma/schema.prisma) rather than inventing a parallel enum for the same
+// five categories.
+const sectorNameValues = ["PRODUCTION", "WAREHOUSING", "MANUFACTURING", "DISTRIBUTION", "AUTOMOTIVE"] as const;
 
 const MIN_SHOE_SIZE = 3;
 const MAX_SHOE_SIZE = 16;
@@ -66,6 +71,8 @@ export const candidateProfileStep2ContinueSchema = z.object({
   intent: z.literal("continue"),
   preferredWorkLocation: z.string().trim().min(1, "Please tell us where you're looking for work.").max(150),
   hoursAvailability: z.enum(hoursAvailabilityValues, { message: "Please select how many hours you need." }),
+  availabilityToStart: z.enum(availabilityToStartValues, { message: "Please select when you're available to start." }),
+  interestedSectors: z.array(z.enum(sectorNameValues)).min(1, "Please select at least one role you're interested in."),
   transportMode: z.enum(transportModeValues, { message: "Please select how you'll travel to work." }),
   shoeSize: z
     .number({ message: "Please select your shoe size." })
@@ -83,6 +90,8 @@ export const candidateProfileStep2DraftSchema = z.object({
   intent: z.literal("draft"),
   preferredWorkLocation: z.string().trim().max(150).optional(),
   hoursAvailability: z.enum(hoursAvailabilityValues).optional(),
+  availabilityToStart: z.enum(availabilityToStartValues).optional(),
+  interestedSectors: z.array(z.enum(sectorNameValues)).optional(),
   transportMode: z.enum(transportModeValues).optional(),
   shoeSize: z
     .number()
