@@ -17,7 +17,7 @@ and page structure should be preserved unless a task explicitly authorises a cha
 - **Styling:** Tailwind CSS v4, CSS-first `@theme` config in `src/app/globals.css` — no `tailwind.config.js`
 - **Database:** PostgreSQL (Neon serverless) via **Prisma 7.9.1** + `@prisma/adapter-neon` — `prisma/schema.prisma` is the single source of truth; generated client output is customized to `src/generated/prisma` (import from `@/generated/prisma/client`, not `@prisma/client`)
 - **Auth:** Firebase Auth — client SDK (`firebase`) for sign-up/sign-in, `firebase-admin` server-side for session-cookie verification. **Not** NextAuth, **not** a custom JWT scheme.
-- **Email:** **Resend** (`src/lib/email.ts`, `src/lib/auth-email.ts`) sends every outbound email — verification, password-reset, welcome, and job-application emails. `firebase-admin` is used only to *generate* the underlying Firebase action links (`src/lib/firebase-action-link.ts`); it does not send anything itself. Not Firebase's built-in `sendEmailVerification`/`sendPasswordResetEmail` flows.
+- **Email:** **Resend** (`src/lib/email.ts`, `src/lib/auth-email.ts`) sends every outbound email — verification, password-reset, welcome, and job-application emails. `firebase-admin` is used only to _generate_ the underlying Firebase action links (`src/lib/firebase-action-link.ts`); it does not send anything itself. Not Firebase's built-in `sendEmailVerification`/`sendPasswordResetEmail` flows.
 - **Validation:** Zod is used project-wide for request validation (e.g. `src/lib/validation/application.ts`), not just a transitive dependency.
 - **Testing:** `vitest` and `@playwright/test` are configured — `npm run test` / `npm run test:e2e` are wired in `package.json`, and test files exist throughout `src/`.
 
@@ -126,21 +126,21 @@ same change, and explicitly tell the user they need to add the real value to the
 Features are tracked as a step-numbered roadmap, not a bug backlog:
 
 - `/create-spec <step> <feature-name>` — creates `.claude/specs/<step>-<slug>.md` and a `feature/<slug>` branch off `main`.
-- `/test-feature <step>-<slug>` — runs the 4-stage pipeline: `test-writer` → `test-runner` → `e2e-test-writer` → `e2e-test-runner`.
+- `/test-feature <step>-<slug>` — runs the 4-Step pipeline: `test-writer` → `test-runner` → `e2e-test-writer` → `e2e-test-runner`.
 - `/code-review-feature <step>-<slug>` — runs `security-reviewer` and `quality-reviewer` in parallel against the diff.
 - `/commit` — commits as `"Implemented Spec <step> - <description>"`, pushes, and waits for PR merge confirmation before cleaning up the branch.
 
 # Project Tracker
 
-| Area | Type | Status | Notes |
-| --- | --- | --- | --- |
-| Register / verify-email / login / forgot-password | Pages | Done (foundation) | Firebase-backed; see `PROJECT_FOUNDATION_BLUEPRINT.md` for original scope |
-| `/` (public homepage) | Page | Done | Public marketing homepage (spec 02); Header/Footer render site-wide from `src/app/layout.tsx` |
-| Session handling | Cross-cutting | Done (foundation) | `src/lib/session.ts` + `src/firebase/admin.ts` |
-| Route protection | Cross-cutting | Done | `src/proxy.ts` guards `/admin/**` (edge presence-check) plus server-side re-verification via `require-admin-session.ts` in `src/app/admin/layout.tsx` |
-| Test infrastructure (Vitest/Playwright config) | Cross-cutting | Done | `npm run test` / `npm run test:e2e` configured and wired |
-| Jobs / applications | Feature area | Done (spec 03) | Public `/jobs`, `/jobs/[slug]`, guest applications with CV upload — see `.claude/rules/database.md` |
-| Admin/recruiter role & dashboard | Feature area | Done (spec 03/04) | `/admin/**` (dashboard, candidates, jobs, clients, analytics), gated by `Role`/`UserStatus` via `require-admin-session.ts` |
+| Area                                              | Type          | Status            | Notes                                                                                                                                                 |
+| ------------------------------------------------- | ------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Register / verify-email / login / forgot-password | Pages         | Done (foundation) | Firebase-backed; see `PROJECT_FOUNDATION_BLUEPRINT.md` for original scope                                                                             |
+| `/` (public homepage)                             | Page          | Done              | Public marketing homepage (spec 02); Header/Footer render site-wide from `src/app/layout.tsx`                                                         |
+| Session handling                                  | Cross-cutting | Done (foundation) | `src/lib/session.ts` + `src/firebase/admin.ts`                                                                                                        |
+| Route protection                                  | Cross-cutting | Done              | `src/proxy.ts` guards `/admin/**` (edge presence-check) plus server-side re-verification via `require-admin-session.ts` in `src/app/admin/layout.tsx` |
+| Test infrastructure (Vitest/Playwright config)    | Cross-cutting | Done              | `npm run test` / `npm run test:e2e` configured and wired                                                                                              |
+| Jobs / applications                               | Feature area  | Done (spec 03)    | Public `/jobs`, `/jobs/[slug]`, guest applications with CV upload — see `.claude/rules/database.md`                                                   |
+| Admin/recruiter role & dashboard                  | Feature area  | Done (spec 03/04) | `/admin/**` (dashboard, candidates, jobs, clients, analytics), gated by `Role`/`UserStatus` via `require-admin-session.ts`                            |
 
 # Warnings & Things to Avoid
 

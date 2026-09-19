@@ -10,6 +10,7 @@ const NO_CHROME_PATHS = new Set([
   "/verify-email",
   "/reset-password",
   "/auth/action",
+  "/profile",
 ]);
 
 interface SiteChromeProps {

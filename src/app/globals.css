@@ -67,6 +67,16 @@ html {
   --color-status-warning: #b26a00;
   --color-status-info: #3b6ea5;
   --color-status-danger: var(--color-error);
+
+  /* Candidate registration wizard — exact palette from the step-1 design
+     file, kept separate from --color-primary/--color-secondary above since
+     those are already used sitewide with different values. */
+  --color-candidate-navy-dark: #071426;
+  --color-candidate-navy-surface: #0b192c;
+  --color-candidate-electric-blue: #3b82f6;
+  --color-candidate-secondary: #3755c3;
+  --color-candidate-secondary-fixed: #dde1ff;
+  --color-candidate-text-heading: #0f172a;
 }
 
 @theme inline {
@@ -127,6 +137,13 @@ html {
   --color-status-warning: var(--color-status-warning);
   --color-status-info: var(--color-status-info);
   --color-status-danger: var(--color-status-danger);
+
+  --color-candidate-navy-dark: var(--color-candidate-navy-dark);
+  --color-candidate-navy-surface: var(--color-candidate-navy-surface);
+  --color-candidate-electric-blue: var(--color-candidate-electric-blue);
+  --color-candidate-secondary: var(--color-candidate-secondary);
+  --color-candidate-secondary-fixed: var(--color-candidate-secondary-fixed);
+  --color-candidate-text-heading: var(--color-candidate-text-heading);
 
   --font-sans: var(--font-hanken-grotesk);
 

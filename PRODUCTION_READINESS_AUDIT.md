@@ -3,8 +3,9 @@
 **Audit type:** Read-only. No files were modified, no packages installed, no migrations run, no build/lint executed. All findings below are sourced from direct inspection of the repository (via 5 parallel read-only research passes covering build/env/secrets, SEO/metadata, auth/API security, database/email/privacy, and performance/accessibility/errors).
 
 **Important housekeeping note:** `CLAUDE.md` (the project's own doc) is stale in several places versus the actual code:
+
 - It says no test scripts exist — `package.json` now has `"test": "vitest"` and `"test:e2e": "playwright test"`, and test files exist under `src/`.
-- It says emails are sent via "Firebase's own built-in flows" — the actual code sends all verification/reset/welcome/application emails via **Resend** (`src/lib/email.ts`, `src/lib/auth-email.ts`); Firebase Admin is only used to *generate* the action links.
+- It says emails are sent via "Firebase's own built-in flows" — the actual code sends all verification/reset/welcome/application emails via **Resend** (`src/lib/email.ts`, `src/lib/auth-email.ts`); Firebase Admin is only used to _generate_ the action links.
 - It says `src/proxy.ts`'s `PROTECTED_PATHS` is empty — it actually protects `/admin/**`.
 - It says Jobs/candidates/admin features are "Not started" — they are substantially built (`src/app/jobs/**`, `src/app/admin/**`, `src/app/employers`, `src/app/sectors`, `src/app/contact-us`).
 
@@ -14,7 +15,7 @@ None of this is a defect in the app — it's a documentation drift issue worth f
 
 ## 1. Executive Summary
 
-The application's **engineering fundamentals are strong**: authentication, session handling, admin route gating, rate limiting, API input validation, file-upload verification, and database transaction/race-condition handling are all well implemented — better than a typical "auth-foundation stage" project. Domain/URL hygiene in application code is clean (no hardcoded localhost/vercel.app in production code paths; everything correctly reads `NEXT_PUBLIC_APP_URL`).
+The application's **engineering fundamentals are strong**: authentication, session handling, admin route gating, rate limiting, API input validation, file-upload verification, and database transaction/race-condition handling are all well implemented — better than a typical "auth-foundation Step" project. Domain/URL hygiene in application code is clean (no hardcoded localhost/vercel.app in production code paths; everything correctly reads `NEXT_PUBLIC_APP_URL`).
 
 However, the site is **not yet production-ready from an SEO and hardening standpoint**: there is no sitemap, no robots.txt, no structured data (JobPosting schema, despite the schema having every field needed), no Open Graph/Twitter card images, no site-wide HTTP security headers (CSP/HSTS/X-Frame-Options/Referrer-Policy/Permissions-Policy), and no root-level 404/error page. These are all real gaps for a public-facing recruitment site whose core value (job pages) depends on search visibility.
 
@@ -40,23 +41,23 @@ Nothing found rises to "the app is broken" — the gaps are pre-launch hygiene i
 
 ## 3. Production Readiness Score
 
-| Category | Score /100 | Why |
-|---|---|---|
-| Build/Deployment | 70 | Minimal but functional `next.config.ts`; no `vercel.json`; stray untracked `prisma.zip` at repo root; build/lint not executed in this read-only pass |
-| SEO (overall) | 25 | Metadata thin on most pages, no per-page robots directives, no canonical fallback |
-| Sitemap | 0 | Missing entirely |
-| Robots.txt | 0 | Missing entirely |
-| Metadata | 30 | Titles present on some pages, no descriptions/OG/Twitter/metadataBase anywhere |
-| Structured Data | 0 | No JSON-LD anywhere despite schema supporting JobPosting fully |
-| Security (headers/CSRF) | 55 | No CSP/HSTS/X-Frame-Options/Referrer-Policy/Permissions-Policy anywhere |
-| Authentication | 85 | Strong: cookie config, admin gating, anti-enumeration, rate limiting |
-| Database | 85 | Well-normalized, transaction-safe, indexed; a couple of items need verification (migrations checked in, isPrimary invariant transaction) |
-| Email | 75 | Functionally solid and safe; SPF/DKIM/DMARC is an external DNS task, not verifiable in-repo |
-| Environment Variables | 80 | Complete `.env.example`, no leaked secrets; a few dead/unused vars (Cloudinary) to clean up |
-| Performance | 55 | No `next/image` usage anywhere — real Core Web Vitals/LCP cost on marketing pages |
-| Accessibility | 75 | Good patterns sampled (labels, aria-live, alt text); not exhaustively audited across all pages |
-| Privacy/GDPR (technical) | 70 | Good data minimization and admin gating; no candidate self-service access/deletion path yet |
-| Error Handling | 65 | Excellent at the API layer; no root-level `not-found.tsx`/`error.tsx` |
+| Category                 | Score /100 | Why                                                                                                                                                  |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build/Deployment         | 70         | Minimal but functional `next.config.ts`; no `vercel.json`; stray untracked `prisma.zip` at repo root; build/lint not executed in this read-only pass |
+| SEO (overall)            | 25         | Metadata thin on most pages, no per-page robots directives, no canonical fallback                                                                    |
+| Sitemap                  | 0          | Missing entirely                                                                                                                                     |
+| Robots.txt               | 0          | Missing entirely                                                                                                                                     |
+| Metadata                 | 30         | Titles present on some pages, no descriptions/OG/Twitter/metadataBase anywhere                                                                       |
+| Structured Data          | 0          | No JSON-LD anywhere despite schema supporting JobPosting fully                                                                                       |
+| Security (headers/CSRF)  | 55         | No CSP/HSTS/X-Frame-Options/Referrer-Policy/Permissions-Policy anywhere                                                                              |
+| Authentication           | 85         | Strong: cookie config, admin gating, anti-enumeration, rate limiting                                                                                 |
+| Database                 | 85         | Well-normalized, transaction-safe, indexed; a couple of items need verification (migrations checked in, isPrimary invariant transaction)             |
+| Email                    | 75         | Functionally solid and safe; SPF/DKIM/DMARC is an external DNS task, not verifiable in-repo                                                          |
+| Environment Variables    | 80         | Complete `.env.example`, no leaked secrets; a few dead/unused vars (Cloudinary) to clean up                                                          |
+| Performance              | 55         | No `next/image` usage anywhere — real Core Web Vitals/LCP cost on marketing pages                                                                    |
+| Accessibility            | 75         | Good patterns sampled (labels, aria-live, alt text); not exhaustively audited across all pages                                                       |
+| Privacy/GDPR (technical) | 70         | Good data minimization and admin gating; no candidate self-service access/deletion path yet                                                          |
+| Error Handling           | 65         | Excellent at the API layer; no root-level `not-found.tsx`/`error.tsx`                                                                                |
 
 **Overall weighted score: 64/100 — GO WITH CONDITIONS** (see Section 22).
 
@@ -114,6 +115,7 @@ None found that would make the site non-functional or unsafe to launch. The item
 ## 8. SEO Audit
 
 ### Metadata
+
 - Root layout (`src/app/layout.tsx:13-16`): only `title: "Huge Recruitment"` + a `description`. No `metadataBase`, `openGraph`, `twitter`, `title.template`, or default `robots`. `lang="en"` is correctly set.
 - `src/app/page.tsx` (homepage) and `src/app/jobs/page.tsx` (job listing) have **no metadata export at all** — inherit only the generic layout title.
 - `src/app/jobs/[slug]/page.tsx:19-36` has `generateMetadata` with dynamic title/description and a conditional canonical — best-covered page in the app, but canonical depends entirely on `NEXT_PUBLIC_APP_URL` with no fallback, and has no OG/Twitter tags.
@@ -122,18 +124,23 @@ None found that would make the site non-functional or unsafe to launch. The item
 - Auth pages and all `/admin/**` pages: no metadata at all, no noindex.
 
 ### Canonicals
+
 Only `/jobs/[slug]` has a canonical, and it's fragile (env-var dependent, no fallback). No other page sets one.
 
 ### Sitemap
+
 **Missing entirely** — no `src/app/sitemap.ts`, no `public/sitemap.xml`. Given jobs are created/closed/archived dynamically, a **dynamic sitemap** via the App Router `MetadataRoute.Sitemap` API is the right approach — enumerate static public routes plus every `PUBLISHED` job by slug (reusing `src/lib/job-dto.ts`'s existing status-filter logic), excluding `DRAFT`/`ARCHIVED`/expired-`CLOSED` jobs and all `/admin/**`, auth pages, `/api/**`.
 
 ### Robots.txt
+
 **Missing entirely** — no `public/robots.txt`, no `src/app/robots.ts`. Recommended policy: allow `/`, disallow `/admin/*`, `/api/*`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/auth/action`; reference `https://hugerecruitment.co.uk/sitemap.xml`. This is purely an SEO/crawl-budget measure — it does not conflict with or replace the existing session-based protection on `/admin/**`.
 
 ### Structured Data
+
 **Absent entirely** — zero matches for `JobPosting`, `application/ld+json`, `schema.org` anywhere. All fields needed for `JobPosting` schema already exist on the `Job` model (title, overview, publishedAt≈datePosted, closingDate≈validThrough, employmentType, townOrCity/countyOrRegion/postcode≈jobLocation, JobPayRate≈baseSalary) — this is an implementable gap, not a data-availability gap.
 
 ### JobPosting SEO
+
 - URL structure: `/jobs/[slug]`, unique, server-generated slug — good.
 - Server-rendered as an async Server Component — fully crawlable.
 - Unique titles/descriptions per job — good.
@@ -142,6 +149,7 @@ Only `/jobs/[slug]` has a canonical, and it's fragile (env-var dependent, no fal
 - No JobPosting schema, not in any sitemap (because no sitemap exists).
 
 ### Indexing Strategy
+
 - **Index, follow:** `/`, `/jobs`, `/jobs/[slug]`, `/sectors`, `/employers`, `/contact-us`, `/privacy-policy`, `/terms-of-service`.
 - **Noindex, nofollow:** `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/auth/action` — no ranking value, tokenized/single-use links shouldn't be crawled or cached.
 - **Noindex, nofollow (already access-gated):** all `/admin/**` — internal tool, no public value; noindex here is belt-and-suspenders on top of existing session checks, not a replacement for them.
@@ -193,16 +201,16 @@ Only `/jobs/[slug]` has a canonical, and it's fragile (env-var dependent, no fal
 
 ## 13. Environment Variables
 
-| Variable | Used Where | Required in Prod? | Secret? | Status | Recommendation |
-|---|---|---|---|---|---|
-| `DATABASE_URL` | `src/lib/prisma.ts` | Yes | Yes | Present in `.env.example`/`.env.local` | Use a **separate** production Neon URL |
-| `NEXT_PUBLIC_FIREBASE_*` (7 vars) | `src/firebase/config.ts` | Yes | No (public) | Present | Set in Vercel Production |
-| `FIREBASE_ADMIN_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY` | `src/firebase/admin.ts` | Yes | Yes | Present | Set in Vercel Production |
-| `NEXT_PUBLIC_APP_URL` | email links, canonical URLs, password-reset generation | Yes | No | Present | **Must equal `https://hugerecruitment.co.uk`** in Vercel Production — hard dependency, multiple flows fail-closed without it |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `RESEND_ADMIN_NOTIFICATION_EMAIL` | `src/lib/email.ts`, `auth-email.ts` | Yes | Yes (API key) | Present | Set in Vercel Production |
-| `BLOB_READ_WRITE_TOKEN` | CV upload | Yes | Yes | Present | Set in Vercel Production |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | rate limiting | Yes (fails open without it) | Yes | Present | **Must verify set** — silent failure mode if missing |
-| `BLOB_STORE_ID`, `CLOUDINARY_API_KEY/SECRET/CLOUD_NAME` | none (unused) | No | Yes | Dead vars in local `.env.local` only, not in `.env.example` | Remove — leftover from abandoned integration |
+| Variable                                                                   | Used Where                                             | Required in Prod?           | Secret?       | Status                                                      | Recommendation                                                                                                               |
+| -------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------- | ------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                             | `src/lib/prisma.ts`                                    | Yes                         | Yes           | Present in `.env.example`/`.env.local`                      | Use a **separate** production Neon URL                                                                                       |
+| `NEXT_PUBLIC_FIREBASE_*` (7 vars)                                          | `src/firebase/config.ts`                               | Yes                         | No (public)   | Present                                                     | Set in Vercel Production                                                                                                     |
+| `FIREBASE_ADMIN_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY`                       | `src/firebase/admin.ts`                                | Yes                         | Yes           | Present                                                     | Set in Vercel Production                                                                                                     |
+| `NEXT_PUBLIC_APP_URL`                                                      | email links, canonical URLs, password-reset generation | Yes                         | No            | Present                                                     | **Must equal `https://hugerecruitment.co.uk`** in Vercel Production — hard dependency, multiple flows fail-closed without it |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `RESEND_ADMIN_NOTIFICATION_EMAIL` | `src/lib/email.ts`, `auth-email.ts`                    | Yes                         | Yes (API key) | Present                                                     | Set in Vercel Production                                                                                                     |
+| `BLOB_READ_WRITE_TOKEN`                                                    | CV upload                                              | Yes                         | Yes           | Present                                                     | Set in Vercel Production                                                                                                     |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`                      | rate limiting                                          | Yes (fails open without it) | Yes           | Present                                                     | **Must verify set** — silent failure mode if missing                                                                         |
+| `BLOB_STORE_ID`, `CLOUDINARY_API_KEY/SECRET/CLOUD_NAME`                    | none (unused)                                          | No                          | Yes           | Dead vars in local `.env.local` only, not in `.env.example` | Remove — leftover from abandoned integration                                                                                 |
 
 No secret values were printed or inspected beyond key names/presence, per the audit's own privacy rules.
 
@@ -231,6 +239,7 @@ No secret values were printed or inspected beyond key names/presence, per the au
 ## 16. Accessibility Audit
 
 Based on a sampled pass (not exhaustive across all pages):
+
 - Forms consistently use `<label htmlFor>`, `aria-live`/`role="alert"`/`role="status"` on dynamic messages, correct `autoComplete` attributes, and properly paired `disabled` states.
 - `/jobs` listing uses `aria-labelledby` and an `sr-only`/`aria-live="polite"` region announcing filtered result counts — a solid pattern for dynamic lists.
 - Single `h1` per sampled page; decorative icons correctly marked `aria-hidden="true"`.
@@ -261,7 +270,7 @@ Based on a sampled pass (not exhaustive across all pages):
 
 ## 19. Privacy/GDPR Technical Considerations
 
-*(Technical observations only — not legal advice; recommend appropriate legal/compliance review before launch.)*
+_(Technical observations only — not legal advice; recommend appropriate legal/compliance review before launch.)_
 
 - `src/lib/job-dto.ts`'s canonical public projection explicitly excludes `Client`/internal admin fields from every public-facing job query — a genuinely good, enforced-by-convention data-minimization pattern.
 - Admin CSV export of candidate data is properly gated behind `requireAdminSession()` and escapes cells against CSV-formula injection.
@@ -274,25 +283,25 @@ Based on a sampled pass (not exhaustive across all pages):
 
 ## 20. Exact Files That Need Changes
 
-| File (new or existing) | Change | Why | Priority | SEO | Security | Deployment |
-|---|---|---|---|---|---|---|
-| `src/app/sitemap.ts` (new) | Create dynamic sitemap enumerating static routes + `PUBLISHED` jobs via existing `job-dto.ts` filters | Sitemap missing entirely | CRITICAL | Yes | No | No |
-| `src/app/robots.ts` (new) | Allow public routes, disallow `/admin/*`, `/api/*`, auth pages; reference sitemap | robots.txt missing entirely | CRITICAL | Yes | No | No |
-| `next.config.ts` | Add `headers()` with CSP, HSTS, X-Frame-Options/frame-ancestors, Referrer-Policy, Permissions-Policy | No site-wide security headers exist | CRITICAL | No | Yes | Yes |
-| `src/app/layout.tsx` | Add `metadataBase`, default `openGraph`/`twitter`, `title.template` | No base metadata config exists | HIGH | Yes | No | No |
-| `src/app/opengraph-image.tsx` / static OG image (new) | Add a branded OG/Twitter image | No social preview image anywhere | HIGH | Yes | No | No |
-| `src/app/login/page.tsx`, `register/page.tsx`, `forgot-password/page.tsx`, `reset-password/page.tsx`, `verify-email/page.tsx`, `auth/action/page.tsx` | Add `metadata = { robots: { index: false, follow: false } }` | Auth pages currently indexable | HIGH | Yes | No | No |
-| `src/app/admin/layout.tsx` or each admin page | Add noindex metadata | Admin pages currently indexable (belt-and-suspenders on top of existing session gating) | HIGH | Yes | No | No |
-| `src/app/not-found.tsx`, `src/app/error.tsx` (new) | Add root-level branded 404/error pages | Only `/jobs` has these today | HIGH | No | No | Yes |
-| `src/app/jobs/[slug]/page.tsx` | Add JobPosting JSON-LD via a `<script type="application/ld+json">`, using existing `Job`/`JobPayRate` fields | No structured data despite full field availability | HIGH | Yes | No | No |
-| `HeaderClient.tsx`, `Footer.tsx`, `HeroCarousel.tsx`, `ReviewsCarousel.tsx`, `employers/page.tsx`, homepage `page.tsx` | Replace raw `<img>` with `next/image` | No image optimization anywhere | HIGH | No | No | No (perf) |
-| `prisma.zip` (repo root) | Delete | Untracked stray archive, not needed | HIGH | No | No | Yes |
-| `.env.local` | Remove `BLOB_STORE_ID`, `CLOUDINARY_*` | Dead/unused vars from abandoned integration | MEDIUM | No | No | No |
-| `src/app/jobs/[slug]/page.tsx` | Add a hardcoded production-origin fallback for canonical URL construction | Canonical silently becomes `undefined` if env var missing | MEDIUM | Yes | No | No |
-| `next.config.ts` | Add `redirects()` for www→apex (or chosen direction) | No canonical-domain redirect exists | MEDIUM | Yes | No | No |
-| `src/app/api/applications/route.ts` | Normalize error logging to `errorClass`/`errorMessage` pattern used elsewhere | Minor log-hygiene inconsistency | MEDIUM | No | Yes | No |
-| `public/file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg` | Delete | Unused Next.js scaffold leftovers | LOW | No | No | No |
-| `CLAUDE.md` | Update stale sections (test scripts, email provider, proxy protection, feature-tracker status) | Documentation drift found across multiple sections | LOW | No | No | No |
+| File (new or existing)                                                                                                                                | Change                                                                                                       | Why                                                                                     | Priority | SEO | Security | Deployment |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | -------- | --- | -------- | ---------- |
+| `src/app/sitemap.ts` (new)                                                                                                                            | Create dynamic sitemap enumerating static routes + `PUBLISHED` jobs via existing `job-dto.ts` filters        | Sitemap missing entirely                                                                | CRITICAL | Yes | No       | No         |
+| `src/app/robots.ts` (new)                                                                                                                             | Allow public routes, disallow `/admin/*`, `/api/*`, auth pages; reference sitemap                            | robots.txt missing entirely                                                             | CRITICAL | Yes | No       | No         |
+| `next.config.ts`                                                                                                                                      | Add `headers()` with CSP, HSTS, X-Frame-Options/frame-ancestors, Referrer-Policy, Permissions-Policy         | No site-wide security headers exist                                                     | CRITICAL | No  | Yes      | Yes        |
+| `src/app/layout.tsx`                                                                                                                                  | Add `metadataBase`, default `openGraph`/`twitter`, `title.template`                                          | No base metadata config exists                                                          | HIGH     | Yes | No       | No         |
+| `src/app/opengraph-image.tsx` / static OG image (new)                                                                                                 | Add a branded OG/Twitter image                                                                               | No social preview image anywhere                                                        | HIGH     | Yes | No       | No         |
+| `src/app/login/page.tsx`, `register/page.tsx`, `forgot-password/page.tsx`, `reset-password/page.tsx`, `verify-email/page.tsx`, `auth/action/page.tsx` | Add `metadata = { robots: { index: false, follow: false } }`                                                 | Auth pages currently indexable                                                          | HIGH     | Yes | No       | No         |
+| `src/app/admin/layout.tsx` or each admin page                                                                                                         | Add noindex metadata                                                                                         | Admin pages currently indexable (belt-and-suspenders on top of existing session gating) | HIGH     | Yes | No       | No         |
+| `src/app/not-found.tsx`, `src/app/error.tsx` (new)                                                                                                    | Add root-level branded 404/error pages                                                                       | Only `/jobs` has these today                                                            | HIGH     | No  | No       | Yes        |
+| `src/app/jobs/[slug]/page.tsx`                                                                                                                        | Add JobPosting JSON-LD via a `<script type="application/ld+json">`, using existing `Job`/`JobPayRate` fields | No structured data despite full field availability                                      | HIGH     | Yes | No       | No         |
+| `HeaderClient.tsx`, `Footer.tsx`, `HeroCarousel.tsx`, `ReviewsCarousel.tsx`, `employers/page.tsx`, homepage `page.tsx`                                | Replace raw `<img>` with `next/image`                                                                        | No image optimization anywhere                                                          | HIGH     | No  | No       | No (perf)  |
+| `prisma.zip` (repo root)                                                                                                                              | Delete                                                                                                       | Untracked stray archive, not needed                                                     | HIGH     | No  | No       | Yes        |
+| `.env.local`                                                                                                                                          | Remove `BLOB_STORE_ID`, `CLOUDINARY_*`                                                                       | Dead/unused vars from abandoned integration                                             | MEDIUM   | No  | No       | No         |
+| `src/app/jobs/[slug]/page.tsx`                                                                                                                        | Add a hardcoded production-origin fallback for canonical URL construction                                    | Canonical silently becomes `undefined` if env var missing                               | MEDIUM   | Yes | No       | No         |
+| `next.config.ts`                                                                                                                                      | Add `redirects()` for www→apex (or chosen direction)                                                         | No canonical-domain redirect exists                                                     | MEDIUM   | Yes | No       | No         |
+| `src/app/api/applications/route.ts`                                                                                                                   | Normalize error logging to `errorClass`/`errorMessage` pattern used elsewhere                                | Minor log-hygiene inconsistency                                                         | MEDIUM   | No  | Yes      | No         |
+| `public/file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`                                                                                | Delete                                                                                                       | Unused Next.js scaffold leftovers                                                       | LOW      | No  | No       | No         |
+| `CLAUDE.md`                                                                                                                                           | Update stale sections (test scripts, email provider, proxy protection, feature-tracker status)               | Documentation drift found across multiple sections                                      | LOW      | No  | No       | No         |
 
 ---
 
