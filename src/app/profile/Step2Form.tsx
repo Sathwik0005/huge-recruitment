@@ -24,6 +24,23 @@ const HOURS_OPTIONS = [
   { value: "THIRTY_PLUS", label: "30+ hrs (Full Time)" },
 ] as const;
 
+const AVAILABILITY_OPTIONS = [
+  { value: "IMMEDIATE", label: "Immediate" },
+  { value: "NEXT_WEEK", label: "Next week" },
+  { value: "TWO_TO_THREE_WEEKS", label: "2 - 3 weeks" },
+  { value: "FOUR_WEEKS_PLUS", label: "4+ weeks time" },
+] as const;
+
+// Reuses the jobs platform's existing five sectors (see `Sector`/`SectorName`
+// in prisma/schema.prisma) rather than a parallel taxonomy for the same roles.
+const SECTOR_OPTIONS = [
+  { value: "WAREHOUSING", label: "Warehouse" },
+  { value: "MANUFACTURING", label: "Manufacture" },
+  { value: "DISTRIBUTION", label: "Distribution" },
+  { value: "AUTOMOTIVE", label: "Automotive" },
+  { value: "PRODUCTION", label: "Production" },
+] as const;
+
 const TRANSPORT_OPTIONS = [
   { value: "CAR", label: "Car" },
   { value: "BUS", label: "Bus" },
@@ -55,6 +72,8 @@ const MAX_SHOE_SIZE = 16;
 export interface Step2InitialValues {
   preferredWorkLocation: string | null;
   hoursAvailability: string | null;
+  availabilityToStart: string | null;
+  interestedSectors: string[];
   transportMode: string | null;
   shoeSize: number | null;
   emergencyContactName: string | null;
@@ -78,6 +97,8 @@ export interface WorkReferenceValue {
 type FormValues = {
   preferredWorkLocation: string;
   hoursAvailability: string;
+  availabilityToStart: string;
+  interestedSectors: string[];
   transportMode: string;
   shoeSize: number;
   emergencyContactName: string;
@@ -107,6 +128,8 @@ function toFormValues(initial: Step2InitialValues | null): FormValues {
   return {
     preferredWorkLocation: initial?.preferredWorkLocation ?? "",
     hoursAvailability: initial?.hoursAvailability ?? "",
+    availabilityToStart: initial?.availabilityToStart ?? "",
+    interestedSectors: initial?.interestedSectors ?? [],
     transportMode: initial?.transportMode ?? "",
     shoeSize: initial?.shoeSize ?? 7,
     emergencyContactName: initial?.emergencyContactName ?? "",
@@ -169,6 +192,15 @@ export function Step2Form({
 
   function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function toggleInterestedSector(value: string) {
+    setValues((prev) => ({
+      ...prev,
+      interestedSectors: prev.interestedSectors.includes(value)
+        ? prev.interestedSectors.filter((sector) => sector !== value)
+        : [...prev.interestedSectors, value],
+    }));
   }
 
   function adjustShoeSize(delta: number) {
@@ -354,6 +386,64 @@ export function Step2Form({
           {errors.hoursAvailability && (
             <p role="alert" aria-live="assertive" className={errorTextClass}>
               {errors.hoursAvailability}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <span className={labelClass}>
+            When are you available to start? <span className="text-error">*</span>
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {AVAILABILITY_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="py-2.5 px-3 rounded-lg text-label-sm font-medium text-center bg-surface-container-low text-candidate-text-heading cursor-pointer hover:bg-surface-container transition-colors has-[:checked]:bg-candidate-navy-dark has-[:checked]:text-white"
+              >
+                <input
+                  type="radio"
+                  name="availabilityToStart"
+                  value={option.value}
+                  checked={values.availabilityToStart === option.value}
+                  onChange={(e) => set("availabilityToStart", e.target.value)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          {errors.availabilityToStart && (
+            <p role="alert" aria-live="assertive" className={errorTextClass}>
+              {errors.availabilityToStart}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <span className={labelClass}>
+            Which role(s) are you interested in? <span className="text-error">*</span>
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {SECTOR_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="py-2.5 px-3 rounded-lg text-label-sm font-medium text-center bg-surface-container-low text-candidate-text-heading cursor-pointer hover:bg-surface-container transition-colors has-[:checked]:bg-candidate-navy-dark has-[:checked]:text-white"
+              >
+                <input
+                  type="checkbox"
+                  name="interestedSectors"
+                  value={option.value}
+                  checked={values.interestedSectors.includes(option.value)}
+                  onChange={() => toggleInterestedSector(option.value)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          {errors.interestedSectors && (
+            <p role="alert" aria-live="assertive" className={errorTextClass}>
+              {errors.interestedSectors}
             </p>
           )}
         </div>

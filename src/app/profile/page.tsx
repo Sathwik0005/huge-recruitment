@@ -68,6 +68,8 @@ export default async function ProfilePage() {
     ? {
         preferredWorkLocation: candidateProfile.preferredWorkLocation,
         hoursAvailability: candidateProfile.hoursAvailability,
+        availabilityToStart: candidateProfile.availabilityToStart,
+        interestedSectors: candidateProfile.interestedSectors,
         transportMode: candidateProfile.transportMode,
         shoeSize: candidateProfile.shoeSize ? Number(candidateProfile.shoeSize) : null,
         emergencyContactName: candidateProfile.emergencyContactName,

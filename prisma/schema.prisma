@@ -274,6 +274,13 @@ enum ReferralSource {
   OTHER
 }
 
+enum AvailabilityToStart {
+  IMMEDIATE
+  NEXT_WEEK
+  TWO_TO_THREE_WEEKS
+  FOUR_WEEKS_PLUS
+}
+
 enum CandidateTitle {
   MR
   MRS
@@ -328,6 +335,8 @@ model CandidateProfile {
   // Step 2 — Work Information
   preferredWorkLocation String?
   hoursAvailability     HoursAvailability?
+  availabilityToStart   AvailabilityToStart?
+  interestedSectors     SectorName[]         @default([])
   transportMode         TransportMode?
   shoeSize              Decimal?
 
