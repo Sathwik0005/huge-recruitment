@@ -15,8 +15,12 @@ export default async function AdminCandidateProfilesPage({
   const search = params.search?.trim();
   const page = Math.max(1, Number(params.page) || 1);
 
+  // Not filtered by role: CandidateProfile is 1:1 with User regardless of
+  // role, so an ADMIN account that has also gone through the onboarding
+  // wizard (e.g. an internal test/dogfooding account) still needs to be
+  // manageable here — the thing that matters is "has a submitted/in-progress
+  // profile", not "is a non-admin".
   const where: Prisma.UserWhereInput = {
-    role: "USER",
     candidateProfile: { isNot: null },
     ...(search
       ? {
