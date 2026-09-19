@@ -53,7 +53,15 @@ const SECURITY_HEADERS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  // camera=(self): the candidate profile wizard's live photo/document
+  // capture (src/app/profile/CameraCaptureModal.tsx) calls getUserMedia
+  // from same-origin top-level JS, never from a cross-origin/embedded
+  // context — `self` allows exactly that and nothing more. Denying it
+  // outright here (the previous `camera=()`) blocks getUserMedia at the
+  // HTTP-header level before the browser ever reaches a permission
+  // prompt, which looks identical to a user-denied permission in the
+  // browser UI but can't be fixed from Chrome's site settings.
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" },
   // No `preload` — that requires HSTS preload-list submission, which is a
   // one-way, hard-to-reverse DNS-level commitment outside this codebase.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },

@@ -32,6 +32,23 @@ export function CameraCaptureModal({ open, title, facingMode, onClose, onCapture
     async function startCamera() {
       setError(undefined);
       setReady(false);
+
+      if (!window.isSecureContext) {
+        if (!cancelled) setError("Camera capture requires HTTPS. Please use Upload instead.");
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        if (!cancelled) {
+          setError("This browser doesn't support camera capture (navigator.mediaDevices.getUserMedia is unavailable). Please use Upload instead.");
+        }
+        console.error("[CameraCaptureModal] getUserMedia unsupported", {
+          hasMediaDevices: !!navigator.mediaDevices,
+          hasGetUserMedia: !!navigator.mediaDevices?.getUserMedia,
+          isSecureContext: window.isSecureContext,
+        });
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode },
@@ -47,10 +64,21 @@ export function CameraCaptureModal({ open, title, facingMode, onClose, onCapture
           await videoRef.current.play();
         }
         setReady(true);
-      } catch {
-        if (!cancelled) {
-          setError("Could not access the camera. Please check your browser's camera permissions, or use Upload instead.");
-        }
+      } catch (err) {
+        if (cancelled) return;
+
+        const name = err instanceof DOMException ? err.name : "UnknownError";
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[CameraCaptureModal] getUserMedia failed", { name, message, facingMode });
+
+        const FRIENDLY_MESSAGES: Record<string, string> = {
+          NotAllowedError: "Camera access was blocked or denied. Allow camera access for this site in your browser's address-bar permissions, or use Upload instead.",
+          NotFoundError: "No camera was found on this device. Please use Upload instead.",
+          NotReadableError: "The camera is already in use by another app or tab. Close it and try again, or use Upload instead.",
+          OverconstrainedError: "No camera on this device matches the requested settings. Please use Upload instead.",
+          SecurityError: "Camera access is blocked by this site's security settings. Please use Upload instead.",
+        };
+        setError(FRIENDLY_MESSAGES[name] ?? `Could not access the camera (${name}: ${message}). Please use Upload instead.`);
       }
     }
 
