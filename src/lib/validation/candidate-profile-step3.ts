@@ -21,6 +21,19 @@ const optionalTextSchema = (max: number) =>
     .optional()
     .transform((value) => (value ? value : undefined));
 
+// Share code shown/reused across all three right-to-work branches (Passport,
+// ID Card, BRP/E-Visa) — GOV.UK share codes are exactly 9 alphanumeric
+// characters (e.g. "W12 345 678"). Spaces are stripped before checking so the
+// client's own space-every-3-characters formatting round-trips cleanly.
+const SHARE_CODE_REGEX = /^[A-Z0-9]{9}$/;
+const shareCodeSchema = z
+  .string()
+  .trim()
+  .max(20)
+  .optional()
+  .transform((value) => (value ? value.replace(/\s+/g, "").toUpperCase() : undefined))
+  .refine((value) => value === undefined || SHARE_CODE_REGEX.test(value), "Share code must be exactly 9 letters/numbers.");
+
 // Accepts "12345678" or, once dashes are stripped by the client's auto-formatting, "12-34-56"-shaped input.
 const accountNumberSchema = z
   .string()
@@ -37,7 +50,7 @@ const candidateProfileStep3BaseShape = {
   rightToWorkDocumentType: z.enum(rightToWorkDocumentTypeValues).optional(),
   brpSubtype: z.enum(brpSubtypeValues).optional(),
   visaExpiryDate: optionalFullDateSchema,
-  rightToWorkShareCode: optionalTextSchema(20),
+  rightToWorkShareCode: shareCodeSchema,
   rightToWorkShareCodeExpiryDate: optionalFullDateSchema,
   rightToWorkDocFrontS3Key: optionalTextSchema(500),
   rightToWorkDocFrontOriginalFilename: optionalTextSchema(255),

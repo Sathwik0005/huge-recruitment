@@ -61,6 +61,43 @@ describe("parseCandidateProfileStep3Input", () => {
       });
       expect(result.success).toBe(true);
     });
+
+    it("rejects a share code that isn't exactly 9 alphanumeric characters", () => {
+      const tooShort = parseCandidateProfileStep3Input({
+        intent: "submit",
+        rightToWorkDocumentType: "PASSPORT",
+        rightToWorkDocFrontS3Key: "k1",
+        rightToWorkDocBackS3Key: "k2",
+        visaExpiryDate: "2030-01-01",
+        rightToWorkShareCode: "W123",
+        ...validBank,
+      });
+      expect(tooShort.success).toBe(false);
+
+      const tooLong = parseCandidateProfileStep3Input({
+        intent: "submit",
+        rightToWorkDocumentType: "PASSPORT",
+        rightToWorkDocFrontS3Key: "k1",
+        rightToWorkDocBackS3Key: "k2",
+        visaExpiryDate: "2030-01-01",
+        rightToWorkShareCode: "W1234567890",
+        ...validBank,
+      });
+      expect(tooLong.success).toBe(false);
+    });
+
+    it("accepts a share code formatted with spaces (strips them before validating)", () => {
+      const result = parseCandidateProfileStep3Input({
+        intent: "submit",
+        rightToWorkDocumentType: "PASSPORT",
+        rightToWorkDocFrontS3Key: "k1",
+        rightToWorkDocBackS3Key: "k2",
+        visaExpiryDate: "2030-01-01",
+        rightToWorkShareCode: "w12 345 678",
+        ...validBank,
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("id card branch", () => {
@@ -95,6 +132,19 @@ describe("parseCandidateProfileStep3Input", () => {
         ...validBank,
       });
       expect(result.success).toBe(true);
+    });
+
+    it("rejects an ID card share code that isn't exactly 9 alphanumeric characters", () => {
+      const result = parseCandidateProfileStep3Input({
+        intent: "submit",
+        rightToWorkDocumentType: "ID_CARD",
+        rightToWorkDocFrontS3Key: "k1",
+        rightToWorkDocBackS3Key: "k2",
+        rightToWorkShareCode: "AB",
+        rightToWorkShareCodeExpiryDate: "2030-01-01",
+        ...validBank,
+      });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -159,6 +209,18 @@ describe("parseCandidateProfileStep3Input", () => {
         ...validBank,
       });
       expect(success.success).toBe(true);
+    });
+
+    it("rejects an e-visa share code that isn't exactly 9 alphanumeric characters", () => {
+      const result = parseCandidateProfileStep3Input({
+        intent: "submit",
+        rightToWorkDocumentType: "BRP_EVISA",
+        brpSubtype: "EVISA",
+        rightToWorkShareCode: "TOOLONGSHARECODE",
+        rightToWorkShareCodeExpiryDate: "2030-01-01",
+        ...validBank,
+      });
+      expect(result.success).toBe(false);
     });
   });
 

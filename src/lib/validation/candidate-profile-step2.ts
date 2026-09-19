@@ -19,6 +19,9 @@ const sectorNameValues = ["PRODUCTION", "WAREHOUSING", "MANUFACTURING", "DISTRIB
 
 const MIN_SHOE_SIZE = 3;
 const MAX_SHOE_SIZE = 16;
+// Same "national significant number, no leading 0" 10-digit shape as the
+// candidate's own mobile number in candidate-profile.ts.
+const MOBILE_NUMBER_REGEX = /^\d{10}$/;
 
 const monthDateSchema = z
   .string()
@@ -45,7 +48,13 @@ const workReferenceBaseSchema = z.object({
   endDate: optionalMonthDateSchema,
   isCurrentJob: z.boolean().default(false),
   managerName: z.string().trim().max(150).optional(),
-  managerMobile: z.string().trim().max(20).optional(),
+  managerMobile: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .optional()
+    .transform((value) => (value ? value : undefined))
+    .refine((value) => value === undefined || MOBILE_NUMBER_REGEX.test(value), "Manager mobile must be exactly 10 digits."),
   managerEmail: z
     .string()
     .trim()
@@ -80,7 +89,11 @@ export const candidateProfileStep2ContinueSchema = z.object({
     .max(MAX_SHOE_SIZE, `Shoe size must be at most ${MAX_SHOE_SIZE}.`)
     .refine((value) => Number.isInteger(value * 2), "Shoe size must be in 0.5 increments."),
   emergencyContactName: z.string().trim().min(1, "Emergency contact name is required.").max(150),
-  emergencyContactMobile: z.string().trim().min(1, "Emergency contact mobile is required.").max(20),
+  emergencyContactMobile: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => MOBILE_NUMBER_REGEX.test(value), "Emergency contact mobile must be exactly 10 digits."),
   emergencyContactRelationship: z.enum(relationshipValues, { message: "Please select a relationship." }),
   referralSource: z.enum(referralSourceValues).optional(),
   workReferences: z.array(workReferenceSchema).optional(),
@@ -100,7 +113,12 @@ export const candidateProfileStep2DraftSchema = z.object({
     .refine((value) => Number.isInteger(value * 2), "Shoe size must be in 0.5 increments.")
     .optional(),
   emergencyContactName: z.string().trim().max(150).optional(),
-  emergencyContactMobile: z.string().trim().max(20).optional(),
+  emergencyContactMobile: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length <= 10, "Emergency contact mobile must be at most 10 digits.")
+    .optional(),
   emergencyContactRelationship: z.enum(relationshipValues).optional(),
   referralSource: z.enum(referralSourceValues).optional(),
   workReferences: z.array(workReferenceSchema).optional(),

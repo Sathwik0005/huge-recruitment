@@ -10,6 +10,42 @@ const labelClass = "block text-label-md text-candidate-text-heading mb-1";
 const cardClass = "bg-surface-container-lowest rounded-2xl p-5 sm:p-6 shadow-md space-y-5";
 const errorTextClass = "text-label-sm text-error mt-1";
 
+const ADDRESS_MAX_LENGTH = 500;
+const TODAY_ISO = new Date().toISOString().slice(0, 10);
+
+/** UK NI number is exactly 9 alphanumeric characters, grouped 2-2-2-2-1 (e.g. "AB 12 34 56 C"). */
+function formatNiNumber(raw: string): string {
+  const chars = raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 9);
+  return [chars.slice(0, 2), chars.slice(2, 4), chars.slice(4, 6), chars.slice(6, 8), chars.slice(8, 9)]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** Digits only, capped at 10 — the dial code is selected separately, so this is the national significant number. */
+function formatMobileNumber(raw: string): string {
+  return raw.replace(/\D/g, "").slice(0, 10);
+}
+
+/**
+ * Normalizes a previously-saved mobile number for display in the 10-digit
+ * format the app now enforces — profiles saved before this rule existed may
+ * have the full 11-digit "0" + national number (e.g. "07300329931"), which
+ * would otherwise fail the new validation the moment the candidate hits
+ * "Continue" again without ever touching this field themselves.
+ */
+function normalizeUkMobile(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length === 11 && digits.startsWith("0") ? digits.slice(1) : digits;
+}
+
+/** UK postcodes are at most 8 characters (e.g. "SW1A 1AA") — letters, digits, and a single space only. */
+function formatPostcode(raw: string): string {
+  return raw
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .toUpperCase()
+    .slice(0, 8);
+}
+
 const TITLE_OPTIONS = [
   { value: "MR", label: "Mr" },
   { value: "MRS", label: "Mrs" },
@@ -97,7 +133,7 @@ function toFormValues(initial: Step1InitialValues | null): FormValues {
     isStudying: initial?.isStudying ?? null,
     hasUnspentConvictions: initial?.hasUnspentConvictions ?? null,
     mobileDialCode: initial?.mobileDialCode ?? "+44",
-    mobileNumber: initial?.mobileNumber ?? "",
+    mobileNumber: initial?.mobileNumber ? normalizeUkMobile(initial.mobileNumber) : "",
     addressLine1: initial?.addressLine1 ?? "",
     addressLine2: initial?.addressLine2 ?? "",
     townOrCity: initial?.townOrCity ?? "",
@@ -248,6 +284,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
             <input
               id="first-name"
               className={inputClass}
+              maxLength={100}
               value={values.firstName}
               onChange={(e) => set("firstName", e.target.value)}
             />
@@ -265,6 +302,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
             <input
               id="middle-name"
               className={inputClass}
+              maxLength={100}
               value={values.middleName}
               onChange={(e) => set("middleName", e.target.value)}
             />
@@ -277,6 +315,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
             <input
               id="surname"
               className={inputClass}
+              maxLength={100}
               value={values.surname}
               onChange={(e) => set("surname", e.target.value)}
             />
@@ -323,6 +362,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
             <input
               id="dob-input"
               type="date"
+              max={TODAY_ISO}
               className={inputClass}
               value={values.dateOfBirth}
               onChange={(e) => set("dateOfBirth", e.target.value)}
@@ -368,7 +408,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               placeholder="e.g. QQ 12 34 56 A"
               maxLength={13}
               value={values.niNumber}
-              onChange={(e) => set("niNumber", e.target.value)}
+              onChange={(e) => set("niNumber", formatNiNumber(e.target.value))}
             />
             {errors.niNumber && (
               <p role="alert" aria-live="assertive" className={errorTextClass}>
@@ -396,8 +436,11 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               <input
                 id="mobile-input"
                 className="flex-1 min-w-0 h-10 px-3 bg-surface-container-low text-candidate-text-heading rounded-lg text-body-md focus:outline-none focus:bg-surface-container-lowest focus:shadow-md transition-all"
+                placeholder="e.g. 7911123456"
+                inputMode="numeric"
+                maxLength={10}
                 value={values.mobileNumber}
-                onChange={(e) => set("mobileNumber", e.target.value)}
+                onChange={(e) => set("mobileNumber", formatMobileNumber(e.target.value))}
               />
             </div>
             {errors.mobileNumber && (
@@ -484,8 +527,9 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
           <input
             className={`${inputClass} flex-1 uppercase`}
             placeholder="Enter UK Postcode (e.g. S1 2BJ)"
+            maxLength={8}
             value={postcodeQuery}
-            onChange={(e) => setPostcodeQuery(e.target.value)}
+            onChange={(e) => setPostcodeQuery(formatPostcode(e.target.value))}
           />
           <button
             type="button"
@@ -514,6 +558,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               id="address-line1"
               className={inputClass}
               placeholder="Building number and street name"
+              maxLength={ADDRESS_MAX_LENGTH}
               value={values.addressLine1}
               onChange={(e) => set("addressLine1", e.target.value)}
             />
@@ -532,6 +577,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               id="address-line2"
               className={inputClass}
               placeholder="Flat"
+              maxLength={ADDRESS_MAX_LENGTH}
               value={values.addressLine2}
               onChange={(e) => set("addressLine2", e.target.value)}
             />
@@ -545,6 +591,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               id="town-city"
               className={inputClass}
               placeholder="e.g. Sheffield"
+              maxLength={100}
               value={values.townOrCity}
               onChange={(e) => set("townOrCity", e.target.value)}
             />
@@ -563,6 +610,7 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               id="county"
               className={inputClass}
               placeholder="e.g. South Yorkshire"
+              maxLength={100}
               value={values.countyOrRegion}
               onChange={(e) => set("countyOrRegion", e.target.value)}
             />
@@ -576,8 +624,9 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
               id="postcode"
               className={`${inputClass} uppercase font-semibold`}
               placeholder="e.g. S1 2BJ"
+              maxLength={8}
               value={values.postcode}
-              onChange={(e) => set("postcode", e.target.value)}
+              onChange={(e) => set("postcode", formatPostcode(e.target.value))}
             />
             {errors.postcode && (
               <p role="alert" aria-live="assertive" className={errorTextClass}>

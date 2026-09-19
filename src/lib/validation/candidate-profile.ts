@@ -4,7 +4,11 @@ import { z } from "zod";
 // the second), six digits, one suffix letter A-D.
 const NI_NUMBER_REGEX = /^[A-CEGHJ-PR-TW-Z]{2}[0-9]{6}[A-D]$/;
 const DIAL_CODE_REGEX = /^\+[1-9]\d{0,3}$/;
-const MOBILE_NUMBER_REGEX = /^[\d\s]{6,15}$/;
+// UK national significant number, i.e. the mobile number with its dial code
+// (+44, selected separately) and leading 0 both stripped — exactly 10 digits.
+const MOBILE_NUMBER_REGEX = /^\d{10}$/;
+// Standard UK postcode shape (outward + inward code), e.g. "S1 2BJ" or "SW1A 1AA".
+const UK_POSTCODE_REGEX = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/;
 const MIN_CANDIDATE_AGE = 16;
 
 function calculateAge(dob: Date, now: Date = new Date()): number {
@@ -25,6 +29,7 @@ const dateOfBirthSchema = z
   .min(1, "Date of birth is required.")
   .refine((value) => !Number.isNaN(Date.parse(value)), "Please enter a valid date of birth.")
   .transform((value) => new Date(value))
+  .refine((dob) => dob.getTime() <= Date.now(), "Date of birth cannot be in the future.")
   .refine((dob) => calculateAge(dob) >= MIN_CANDIDATE_AGE, `You must be at least ${MIN_CANDIDATE_AGE} to register.`);
 
 const niNumberSchema = z
@@ -47,18 +52,23 @@ export const candidateProfileContinueSchema = z.object({
   isStudying: z.boolean({ message: "Please answer the studying question." }),
   hasUnspentConvictions: z.boolean({ message: "Please answer the convictions question." }),
   mobileDialCode: z.string().trim().regex(DIAL_CODE_REGEX, "Please select a valid dialing code."),
-  mobileNumber: z.string().trim().regex(MOBILE_NUMBER_REGEX, "Please enter a valid mobile number."),
+  mobileNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => MOBILE_NUMBER_REGEX.test(value), "Mobile number must be exactly 10 digits."),
   avatarS3Key: z.string().trim().max(500).optional(),
-  addressLine1: z.string().trim().min(1, "Address line 1 is required.").max(200),
-  addressLine2: z.string().trim().max(200).optional(),
+  addressLine1: z.string().trim().min(1, "Address line 1 is required.").max(500),
+  addressLine2: z.string().trim().max(500).optional(),
   townOrCity: z.string().trim().min(1, "Town / City is required.").max(100),
   countyOrRegion: z.string().trim().max(100).optional(),
   postcode: z
     .string()
     .trim()
     .min(1, "Postcode is required.")
-    .max(10)
-    .transform((value) => value.toUpperCase()),
+    .max(8)
+    .transform((value) => value.toUpperCase())
+    .refine((value) => UK_POSTCODE_REGEX.test(value), "Please enter a valid UK postcode."),
 });
 
 export const candidateProfileDraftSchema = z.object({
@@ -83,16 +93,21 @@ export const candidateProfileDraftSchema = z.object({
   isStudying: z.boolean().optional(),
   hasUnspentConvictions: z.boolean().optional(),
   mobileDialCode: z.string().trim().max(8).optional(),
-  mobileNumber: z.string().trim().max(20).optional(),
+  mobileNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length <= 10, "Mobile number must be at most 10 digits.")
+    .optional(),
   avatarS3Key: z.string().trim().max(500).optional(),
-  addressLine1: z.string().trim().max(200).optional(),
-  addressLine2: z.string().trim().max(200).optional(),
+  addressLine1: z.string().trim().max(500).optional(),
+  addressLine2: z.string().trim().max(500).optional(),
   townOrCity: z.string().trim().max(100).optional(),
   countyOrRegion: z.string().trim().max(100).optional(),
   postcode: z
     .string()
     .trim()
-    .max(10)
+    .max(8)
     .transform((value) => value.toUpperCase())
     .optional(),
 });

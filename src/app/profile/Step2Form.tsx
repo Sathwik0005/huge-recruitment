@@ -17,6 +17,23 @@ const cardClass =
   "bg-surface-container-lowest rounded-2xl p-5 sm:p-6 shadow-md space-y-5";
 const errorTextClass = "text-label-sm text-error mt-1";
 
+/** Digits only, capped at 10 — the national significant number, no leading 0/dial code. */
+function formatMobileNumber(raw: string): string {
+  return raw.replace(/\D/g, "").slice(0, 10);
+}
+
+/**
+ * Normalizes a previously-saved mobile number for display in the 10-digit
+ * format now enforced — profiles saved before this rule existed may have
+ * the full 11-digit "0" + national number (e.g. "07300329931"), which would
+ * otherwise fail validation the moment the candidate saves again without
+ * ever touching this field themselves.
+ */
+function normalizeUkMobile(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length === 11 && digits.startsWith("0") ? digits.slice(1) : digits;
+}
+
 const HOURS_OPTIONS = [
   { value: "ZERO_TO_TEN", label: "0 - 10 hrs" },
   { value: "TEN_TO_TWENTY", label: "10 - 20 hrs" },
@@ -133,7 +150,7 @@ function toFormValues(initial: Step2InitialValues | null): FormValues {
     transportMode: initial?.transportMode ?? "",
     shoeSize: initial?.shoeSize ?? 7,
     emergencyContactName: initial?.emergencyContactName ?? "",
-    emergencyContactMobile: initial?.emergencyContactMobile ?? "",
+    emergencyContactMobile: initial?.emergencyContactMobile ? normalizeUkMobile(initial.emergencyContactMobile) : "",
     emergencyContactRelationship: initial?.emergencyContactRelationship ?? "",
     referralSource: initial?.referralSource ?? "",
   };
@@ -186,7 +203,10 @@ export function Step2Form({
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(toFormValues(initialValues));
   const [references, setReferences] = useState<WorkReferenceValue[]>(
-    initialWorkReferences,
+    initialWorkReferences.map((reference) => ({
+      ...reference,
+      managerMobile: reference.managerMobile ? normalizeUkMobile(reference.managerMobile) : reference.managerMobile,
+    })),
   );
   const [editingIndex, setEditingIndex] = useState<number | "new" | null>(null);
   const [draftReference, setDraftReference] =
@@ -362,6 +382,7 @@ export function Step2Form({
             id="work-location"
             className={inputClass}
             placeholder="e.g. Sheffield, Leeds, Doncaster"
+            maxLength={150}
             value={values.preferredWorkLocation}
             onChange={(e) => set("preferredWorkLocation", e.target.value)}
           />
@@ -539,6 +560,7 @@ export function Step2Form({
               id="emergency-name"
               className={inputClass}
               placeholder="e.g. Jane Doe"
+              maxLength={150}
               value={values.emergencyContactName}
               onChange={(e) => set("emergencyContactName", e.target.value)}
             />
@@ -560,9 +582,11 @@ export function Step2Form({
               <input
                 id="emergency-mobile"
                 className={inputClass}
-                placeholder="07700 900123"
+                placeholder="e.g. 7911123456"
+                inputMode="numeric"
+                maxLength={10}
                 value={values.emergencyContactMobile}
-                onChange={(e) => set("emergencyContactMobile", e.target.value)}
+                onChange={(e) => set("emergencyContactMobile", formatMobileNumber(e.target.value))}
               />
             </div>
             {errors.emergencyContactMobile && (
@@ -700,6 +724,7 @@ export function Step2Form({
                   id="ref-job-title"
                   className={refInputClass}
                   placeholder="e.g. Forklift Operator"
+                  maxLength={150}
                   value={draftReference.jobTitle}
                   onChange={(e) =>
                     setDraftReference((prev) => ({
@@ -717,6 +742,7 @@ export function Step2Form({
                   id="ref-company-name"
                   className={refInputClass}
                   placeholder="e.g. Amazon Fulfillment"
+                  maxLength={150}
                   value={draftReference.companyName}
                   onChange={(e) =>
                     setDraftReference((prev) => ({
@@ -736,6 +762,7 @@ export function Step2Form({
                 id="ref-company-address"
                 className={refInputClass}
                 placeholder="e.g. Unit 4, Grange Park, Northampton"
+                maxLength={300}
                 value={draftReference.companyAddress}
                 onChange={(e) =>
                   setDraftReference((prev) => ({
@@ -808,6 +835,7 @@ export function Step2Form({
                   id="ref-manager-name"
                   className={refInputClass}
                   placeholder="e.g. Sarah Jenkins"
+                  maxLength={150}
                   value={draftReference.managerName}
                   onChange={(e) =>
                     setDraftReference((prev) => ({
@@ -824,12 +852,14 @@ export function Step2Form({
                 <input
                   id="ref-manager-mobile"
                   className={refInputClass}
-                  placeholder="07123 456789"
+                  placeholder="e.g. 7123456789"
+                  inputMode="numeric"
+                  maxLength={10}
                   value={draftReference.managerMobile}
                   onChange={(e) =>
                     setDraftReference((prev) => ({
                       ...prev,
-                      managerMobile: e.target.value,
+                      managerMobile: formatMobileNumber(e.target.value),
                     }))
                   }
                 />
@@ -843,6 +873,7 @@ export function Step2Form({
                   type="email"
                   className={refInputClass}
                   placeholder="sarah.j@amazon.com"
+                  maxLength={200}
                   value={draftReference.managerEmail}
                   onChange={(e) =>
                     setDraftReference((prev) => ({

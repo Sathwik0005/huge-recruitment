@@ -85,6 +85,37 @@ describe("candidateProfileContinueSchema", () => {
       expect(result.data.postcode).toBe("S1 2BJ");
     }
   });
+
+  it("rejects a postcode that doesn't match the UK postcode shape", () => {
+    const result = candidateProfileContinueSchema.safeParse({ ...validContinuePayload, postcode: "NOTAPOSTCODE" });
+    expect(result.success).toBe(false);
+  });
+
+  it("normalizes a mobile number with spaces/formatting to 10 digits", () => {
+    const result = candidateProfileContinueSchema.safeParse({ ...validContinuePayload, mobileNumber: "07700 900077".slice(1) });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.mobileNumber).toBe("7700900077");
+    }
+  });
+
+  it("rejects a mobile number that isn't exactly 10 digits", () => {
+    const tooShort = candidateProfileContinueSchema.safeParse({ ...validContinuePayload, mobileNumber: "12345" });
+    expect(tooShort.success).toBe(false);
+
+    const tooLong = candidateProfileContinueSchema.safeParse({ ...validContinuePayload, mobileNumber: "770090007712345" });
+    expect(tooLong.success).toBe(false);
+  });
+
+  it("rejects a date of birth in the future", () => {
+    const future = new Date();
+    future.setFullYear(future.getFullYear() + 1);
+    const result = candidateProfileContinueSchema.safeParse({
+      ...validContinuePayload,
+      dateOfBirth: future.toISOString().slice(0, 10),
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("parseCandidateProfileInput", () => {

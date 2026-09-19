@@ -92,6 +92,12 @@ function formatSortCode(raw: string): string {
   return digits.match(/.{1,2}/g)?.join("-") ?? digits;
 }
 
+/** GOV.UK share codes are exactly 9 alphanumeric characters, grouped in 3s (e.g. "W12 345 678"). */
+function formatShareCode(raw: string): string {
+  const chars = raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 9);
+  return chars.match(/.{1,3}/g)?.join(" ") ?? chars;
+}
+
 async function saveProfile(intent: "draft" | "submit", values: FormValues) {
   const response = await fetch("/api/candidate/profile/step-3", {
     method: "POST",
@@ -306,7 +312,7 @@ export function Step3Form({
                     maxLength={11}
                     placeholder="e.g. W12 345 678"
                     value={values.rightToWorkShareCode}
-                    onChange={(e) => set("rightToWorkShareCode", e.target.value.toUpperCase())}
+                    onChange={(e) => set("rightToWorkShareCode", formatShareCode(e.target.value))}
                   />
                   {errors.rightToWorkShareCode && <p role="alert" aria-live="assertive" className={errorTextClass}>{errors.rightToWorkShareCode}</p>}
                 </div>
@@ -379,7 +385,7 @@ export function Step3Form({
                   className={`${inputClass} font-mono uppercase`}
                   placeholder="e.g. W12 345 678"
                   value={values.rightToWorkShareCode}
-                  onChange={(e) => set("rightToWorkShareCode", e.target.value.toUpperCase())}
+                  onChange={(e) => set("rightToWorkShareCode", formatShareCode(e.target.value))}
                 />
                 <p className="text-label-sm text-candidate-secondary mt-1">Obtained via GOV.UK Prove your right to work</p>
                 {errors.rightToWorkShareCode && <p role="alert" aria-live="assertive" className={errorTextClass}>{errors.rightToWorkShareCode}</p>}
@@ -488,7 +494,7 @@ export function Step3Form({
                       className={`${subInputClass} font-mono uppercase`}
                       placeholder="e.g. W12 345 678"
                       value={values.rightToWorkShareCode}
-                      onChange={(e) => set("rightToWorkShareCode", e.target.value.toUpperCase())}
+                      onChange={(e) => set("rightToWorkShareCode", formatShareCode(e.target.value))}
                     />
                     <p className="text-label-sm text-candidate-secondary mt-1">Starts with W, typically 9 characters</p>
                     {errors.rightToWorkShareCode && <p role="alert" aria-live="assertive" className={errorTextClass}>{errors.rightToWorkShareCode}</p>}
@@ -529,6 +535,7 @@ export function Step3Form({
             id="bank-holder-name"
             className={inputClass}
             placeholder="e.g. James Baldwin"
+            maxLength={150}
             value={values.bankAccountHolderName}
             onChange={(e) => set("bankAccountHolderName", e.target.value)}
           />
