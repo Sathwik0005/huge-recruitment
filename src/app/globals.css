@@ -205,6 +205,16 @@ body {
   color: var(--color-on-background);
 }
 
+/* Disabled form controls (e.g. a locked, submitted candidate profile) get an
+   explicit not-allowed cursor on hover — browsers don't apply this by default. */
+input:disabled,
+select:disabled,
+textarea:disabled,
+button:disabled,
+fieldset:disabled {
+  cursor: not-allowed;
+}
+
 .employer-hero-gradient {
   background: linear-gradient(135deg, var(--color-employer-hero-start) 0%, var(--color-employer-hero-end) 100%);
 }

@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import type { DocumentSlot } from "@/lib/candidate-documents";
+import { UploadChoiceModal } from "./UploadChoiceModal";
+import { CameraCaptureModal } from "./CameraCaptureModal";
 
 interface DocumentDropzoneProps {
   slot: DocumentSlot;
@@ -46,14 +48,14 @@ export function DocumentDropzone({
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
-  const inputId = `document-dropzone-${slot}`;
+  const [choiceOpen, setChoiceOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputId = `document-dropzone-${slot}`;
+  const supportsCamera = accept.includes("image/");
 
-  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
+  async function handleFile(file: File) {
     setError(undefined);
     setFileSize(file.size);
 
@@ -85,6 +87,21 @@ export function DocumentDropzone({
       setError("Could not upload the file. Please try again.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) handleFile(file);
+  }
+
+  function handleAreaClick() {
+    if (uploading) return;
+    if (supportsCamera) {
+      setChoiceOpen(true);
+    } else {
+      fileInputRef.current?.click();
     }
   }
 
@@ -130,8 +147,9 @@ export function DocumentDropzone({
           </button>
         </div>
       ) : (
-        <label
-          htmlFor={inputId}
+        <button
+          type="button"
+          onClick={handleAreaClick}
           className="rounded-xl p-5 flex flex-col items-center justify-center text-center bg-surface-container-low border border-dashed border-surface-container-high hover:border-candidate-secondary hover:bg-surface-container cursor-pointer h-40 transition-all"
         >
           <div className="w-10 h-10 rounded-full bg-surface-container text-candidate-navy-dark flex items-center justify-center mb-2.5">
@@ -140,25 +158,54 @@ export function DocumentDropzone({
             </span>
           </div>
           <p className="text-label-sm font-semibold text-candidate-text-heading">
-            {uploading ? "Uploading..." : "Click to browse"}
+            {uploading ? "Uploading..." : supportsCamera ? "Take Photo or Upload" : "Click to browse"}
           </p>
           {helperText && <p className="text-label-sm text-candidate-secondary mt-0.5">{helperText}</p>}
           <p className="text-label-sm text-candidate-secondary mt-2">{acceptHint}</p>
-          <input
-            id={inputId}
-            type="file"
-            accept={accept}
-            className="hidden"
-            disabled={uploading}
-            onChange={handleFileChange}
-          />
-        </label>
+        </button>
       )}
+
+      <input
+        id={inputId}
+        ref={fileInputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        disabled={uploading}
+        onChange={handleFileInputChange}
+      />
 
       {error && (
         <p role="alert" aria-live="assertive" className="text-label-sm text-error mt-1">
           {error}
         </p>
+      )}
+
+      <UploadChoiceModal
+        open={choiceOpen}
+        title={label}
+        onClose={() => setChoiceOpen(false)}
+        onChooseUpload={() => {
+          setChoiceOpen(false);
+          fileInputRef.current?.click();
+        }}
+        onChooseCamera={() => {
+          setChoiceOpen(false);
+          setCameraOpen(true);
+        }}
+      />
+
+      {supportsCamera && (
+        <CameraCaptureModal
+          open={cameraOpen}
+          title={label}
+          facingMode="environment"
+          onClose={() => setCameraOpen(false)}
+          onCapture={(file) => {
+            setCameraOpen(false);
+            handleFile(file);
+          }}
+        />
       )}
     </div>
   );

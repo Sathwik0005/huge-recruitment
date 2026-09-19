@@ -118,6 +118,9 @@ export default async function ProfilePage() {
     ? Math.min(candidateProfile.onboardingStep, TOTAL_BUILT_STEPS)
     : 1;
 
+  const isSubmitted = candidateProfile?.step3CompletedAt != null;
+  const editingUnlockedByAdmin = candidateProfile?.editingUnlockedByAdmin ?? false;
+
   return (
     <main className="w-full bg-surface min-h-screen">
       <ProfileWizard
@@ -126,6 +129,8 @@ export default async function ProfilePage() {
         email={result.user.email}
         avatarUrl={avatarUrl}
         highestReachableStep={highestReachableStep}
+        isSubmitted={isSubmitted}
+        editingUnlockedByAdmin={editingUnlockedByAdmin}
         step1InitialValues={step1InitialValues}
         step2InitialValues={step2InitialValues}
         initialWorkReferences={initialWorkReferences}

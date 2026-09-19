@@ -178,7 +178,7 @@ export default async function HomePage() {
               <p className="mt-8 text-lg leading-9 text-gray-600">
                 Partner with one of the UK’s trusted recruitment specialists,
                 connecting skilled candidates with top employers across
-                warehousing, logistics, manufacturing, distribution, and
+                warehousing, distribution, manfacturing, production and
                 automotive sectors. We provide access to exclusive roles that
                 match your experience and career goals.
               </p>

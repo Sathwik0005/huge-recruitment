@@ -174,10 +174,14 @@ export function Step2Form({
   initialValues,
   initialWorkReferences,
   onContinue,
+  readOnly = false,
+  onLockedInteraction,
 }: {
   initialValues: Step2InitialValues | null;
   initialWorkReferences: WorkReferenceValue[];
   onContinue: () => void;
+  readOnly?: boolean;
+  onLockedInteraction?: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(toFormValues(initialValues));
@@ -334,6 +338,15 @@ export function Step2Form({
         </p>
       )}
 
+      <div className="relative">
+      {readOnly && (
+        <div
+          className="absolute inset-0 z-10 cursor-not-allowed"
+          onClick={onLockedInteraction}
+          role="presentation"
+        />
+      )}
+      <fieldset disabled={readOnly} className="contents space-y-6">
       {/* Card: Work Information */}
       <div className={cardClass}>
         <h2 className="text-headline-md text-candidate-text-heading">
@@ -912,37 +925,41 @@ export function Step2Form({
           )}
         </div>
       </div>
+      </fieldset>
+      </div>
 
       {/* Form actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-        <button
-          type="button"
-          onClick={handleSaveDraft}
-          disabled={busy}
-          className="w-full sm:w-auto h-10 px-5 rounded-lg bg-surface-container-lowest text-candidate-text-heading text-label-md font-bold hover:bg-surface-container transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-60"
-        >
-          <span
-            className="material-symbols-outlined text-[18px]"
-            aria-hidden="true"
+      {!readOnly && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={busy}
+            className="w-full sm:w-auto h-10 px-5 rounded-lg bg-surface-container-lowest text-candidate-text-heading text-label-md font-bold hover:bg-surface-container transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-60"
           >
-            bookmark_border
-          </span>
-          {savingDraft ? "Saving..." : "Save Draft & Exit"}
-        </button>
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full sm:w-auto h-11 px-7 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          {continuing ? "Saving..." : "Save & Continue to Step 3"}
-          <span
-            className="material-symbols-outlined text-[20px]"
-            aria-hidden="true"
+            <span
+              className="material-symbols-outlined text-[18px]"
+              aria-hidden="true"
+            >
+              bookmark_border
+            </span>
+            {savingDraft ? "Saving..." : "Save Draft & Exit"}
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full sm:w-auto h-11 px-7 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            arrow_forward
-          </span>
-        </button>
-      </div>
+            {continuing ? "Saving..." : "Save & Continue to Step 3"}
+            <span
+              className="material-symbols-outlined text-[20px]"
+              aria-hidden="true"
+            >
+              arrow_forward
+            </span>
+          </button>
+        </div>
+      )}
     </form>
   );
 }

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Candidate Profile - Step 3: Proof of Right to Work &amp; Bank Details</title>
+<!-- Tailwind CSS v3 CDN with forms plugin -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#091524',
+              navyCard: '#0f1f35',
+              blue: '#2563eb',
+              dark: '#0e1726',
+              bgLight: '#f3f6fb',
+              borderLight: '#e2e8f0',
+              textMain: '#1e293b',
+              textMuted: '#64748b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-elements">
+    /* Custom radio & file dropzone visual highlights */
+    .dropzone-dashed {
+      border: 1.5px dashed #cbd5e1;
+      transition: all 0.2s ease-in-out;
+    }
+    .dropzone-dashed:hover {
+      border-color: #2563eb;
+      background-color: #f8faff;
+    }
+    .pill-active {
+      background-color: #091524 !important;
+      color: #ffffff !important;
+      border-color: #091524 !important;
+    }
+    .pill-inactive {
+      background-color: #f1f5f9;
+      color: #475569;
+      border-color: #e2e8f0;
+    }
+    .pill-inactive:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body class="bg-[#f3f6fb] min-h-screen text-[#1e293b] font-sans antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white pb-12">
+
+<!-- BEGIN: StepIndicator -->
+<div class="w-full flex flex-col items-center justify-center pt-7 pb-4" data-purpose="step-indicator">
+<div class="flex items-center space-x-2 text-xs font-semibold tracking-wider text-slate-900 uppercase">
+<span class="w-5 h-5 rounded-full bg-[#091524] text-white flex items-center justify-center text-[11px] font-bold">3</span>
+<span class="text-slate-700 tracking-wide font-medium">STEP 3 OF 6</span>
+</div>
+<h1 class="text-base sm:text-lg font-bold text-[#091524] mt-1 relative pb-1.5 text-center">
+      Proof of Right to Work &amp; Bank Details
+      <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-0.5 bg-blue-600 rounded-full"></span>
+</h1>
+</div>
+<!-- END: StepIndicator -->
+<!-- BEGIN: MainContent -->
+<main class="w-full max-w-4xl mx-auto px-4 sm:px-6 space-y-6 flex-grow" data-purpose="registration-form-content">
+<!-- BEGIN: Card1_RightToWork -->
+<section class="bg-white rounded-xl border border-slate-200/90 shadow-sm p-6 sm:p-8" data-purpose="proof-of-right-to-work">
+<!-- Section Header -->
+<div class="border-b border-slate-100 pb-4 mb-6">
+<h2 class="text-lg font-bold text-slate-900 tracking-tight">Proof of Right to Work</h2>
+<p class="text-xs text-slate-500 mt-1">Under UK legislation, we must verify your legal right to work before placing you into industrial works.</p>
+</div>
+<!-- Document Selector Buttons -->
+<div class="mb-6">
+<label class="block text-xs font-semibold text-slate-700 mb-2">
+          Identity Document Type <span class="text-red-500">*</span>
+</label>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="doc-type-selector">
+<button class="pill-active py-2.5 px-4 text-xs font-semibold rounded-lg border transition-all text-center flex items-center justify-center space-x-2 shadow-xs" id="btn-passport" onclick="switchDocType('passport')" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Passport</span>
+</button>
+<button class="pill-inactive py-2.5 px-4 text-xs font-medium rounded-lg border transition-all text-center flex items-center justify-center space-x-2 shadow-xs" id="btn-idcard" onclick="switchDocType('idcard')" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<rect height="16" rx="2" stroke-width="2" width="18" x="3" y="4"></rect>
+<line stroke-width="2" x1="7" x2="11" y1="8" y2="8"></line>
+<line stroke-width="2" x1="7" x2="17" y1="12" y2="12"></line>
+</svg>
+<span>ID Card</span>
+</button>
+<button class="pill-inactive py-2.5 px-4 text-xs font-medium rounded-lg border transition-all text-center flex items-center justify-center space-x-2 shadow-xs" id="btn-brp" onclick="switchDocType('brp')" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<rect height="14" rx="2" stroke-width="2" width="20" x="2" y="5"></rect>
+<circle cx="8" cy="12" r="2" stroke-width="2"></circle>
+<path d="M14 10h4M14 14h2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>BRP / E-Visa</span>
+</button>
+</div>
+</div>
+<!-- VIEW 1: Passport Form Fields -->
+<div class="space-y-6" id="view-passport">
+<!-- Passport Upload Zones -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Front Cover Upload -->
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-slate-700 mb-1.5">Passport (Front Cover) <span class="text-red-500">*</span></span>
+<div class="dropzone-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center bg-slate-50/60 cursor-pointer h-40">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Upload front cover</p>
+<p class="text-[11px] text-slate-500 mt-0.5">Drag &amp; drop or <span class="text-blue-600 font-medium underline">browse</span></p>
+<p class="text-[10px] text-slate-400 mt-2">Accepted: .jpg, .png, .pdf (Max 10MB)</p>
+</div>
+</div>
+<!-- Picture Page Upload -->
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-slate-700 mb-1.5">Passport (Picture Page) <span class="text-red-500">*</span></span>
+<div class="dropzone-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center bg-slate-50/60 cursor-pointer h-40 border-blue-200">
+<div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Upload photo page</p>
+<p class="text-[11px] text-slate-500 mt-0.5">Drag &amp; drop or <span class="text-blue-600 font-medium underline">browse</span></p>
+<p class="text-[10px] text-slate-400 mt-2">Accepted: .jpg, .png, .pdf (Max 10MB)</p>
+</div>
+</div>
+</div>
+<!-- Visa & Right to Work Sub-Block -->
+<div class="bg-slate-50/80 rounded-xl p-5 border border-slate-200/80 space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Online Right to Work &amp; Visa Details</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Visa Expiry Date *</label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800" type="date"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">
+                Share Code
+*<input class="w-full text-xs uppercase tracking-wider rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800 font-mono" maxlength="11" placeholder="e.g. W12 345 678" type="text"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Share Code Expiry Date</label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800" type="date"/>
+</div>
+</div>
+</div>
+</div>
+<!-- VIEW 2: ID Card Fields (Initially Hidden) -->
+<div class="space-y-6 hidden" id="view-idcard">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-slate-700 mb-1.5">National ID Card (Front) <span class="text-red-500">*</span></span>
+<div class="dropzone-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center bg-slate-50/60 cursor-pointer h-40">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Upload ID front side</p>
+<p class="text-[10px] text-slate-400 mt-2">Accepted: .jpg, .png, .pdf (Max 10MB)</p>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-slate-700 mb-1.5">National ID Card (Back) <span class="text-red-500">*</span></span>
+<div class="dropzone-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center bg-slate-50/60 cursor-pointer h-40">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Upload ID reverse side</p>
+<p class="text-[10px] text-slate-400 mt-2">Accepted: .jpg, .png, .pdf (Max 10MB)</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Right to Work Share Code <span class="text-red-500">*</span></label>
+<input class="w-full text-xs uppercase tracking-wider rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800 font-mono" placeholder="e.g. W12 345 678" type="text"/>
+<span class="text-[10px] text-slate-500 mt-1 block">Obtained via GOV.UK Prove your right to work</span>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Share Code Expiry Date <span class="text-red-500">*</span></label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800" type="date"/>
+</div>
+</div>
+</div>
+<!-- VIEW 3: BRP / E-Visa (Initially Hidden) -->
+<div class="space-y-6 hidden" id="view-brp">
+<!-- Sub-radio toggle between physical BRP and E-Visa -->
+<div class="flex items-center space-x-6 bg-slate-50 p-3 rounded-lg border border-slate-200">
+<span class="text-xs font-bold text-slate-800">Residency Verification Subtype:</span>
+<label class="inline-flex items-center cursor-pointer text-xs font-medium text-slate-700">
+<input checked="" class="text-blue-600 focus:ring-blue-500 mr-2" name="brp_subtype" onchange="toggleBrpSubtype(this.value)" type="radio" value="physical_brp"/>
+            Physical BRP Card
+          </label>
+<label class="inline-flex items-center cursor-pointer text-xs font-medium text-slate-700">
+<input class="text-blue-600 focus:ring-blue-500 mr-2" name="brp_subtype" onchange="toggleBrpSubtype(this.value)" type="radio" value="evisa"/>
+            Digital Status (E-Visa / eVisa)
+          </label>
+</div>
+<!-- BRP physical uploads -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="brp-physical-container">
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-slate-700 mb-1.5">Residence Permit (Front) <span class="text-red-500">*</span></span>
+<div class="dropzone-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center bg-slate-50/60 cursor-pointer h-40">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Upload BRP front side</p>
+<p class="text-[10px] text-slate-400 mt-2">Accepted: .jpg, .png, .pdf (Max 10MB)</p>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-slate-700 mb-1.5">Residence Permit (Back) <span class="text-red-500">*</span></span>
+<div class="dropzone-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center bg-slate-50/60 cursor-pointer h-40">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Upload BRP reverse side</p>
+<p class="text-[10px] text-slate-400 mt-2">Accepted: .jpg, .png, .pdf (Max 10MB)</p>
+</div>
+</div>
+</div>
+<!-- E-Visa details -->
+<div class="bg-slate-50/80 rounded-xl p-5 border border-slate-200/80 space-y-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Right to Work Share Code <span class="text-red-500">*</span></label>
+<input class="w-full text-xs uppercase tracking-wider rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800 font-mono" placeholder="e.g. W12 345 678" type="text"/>
+<span class="text-[10px] text-slate-500 mt-1 block">Starts with W, typically 9 characters</span>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Status Expiry Date <span class="text-red-500">*</span></label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2 px-3 text-slate-800" type="date"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Card1_RightToWork -->
+<!-- BEGIN: Card2_BankDetails -->
+<section class="bg-white rounded-xl border border-slate-200/90 shadow-sm p-6 sm:p-8" data-purpose="bank-details">
+<!-- Section Header -->
+<div class="border-b border-slate-100 pb-4 mb-6">
+<h2 class="text-lg font-bold text-slate-900 tracking-tight">Bank Details</h2>
+<p class="text-xs text-slate-500 mt-1">Provide your UK bank account for weekly wages, payroll processing, and statutory payments.</p>
+</div>
+<div class="space-y-5">
+<!-- Account Holder Name -->
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">
+            Account Holder Name <span class="text-red-500">*</span>
+</label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2.5 px-3.5 text-slate-800 font-medium" placeholder="e.g. Sathwik User" type="text" value="Sathwik User"/>
+<span class="text-[11px] text-slate-500 mt-1 block">Must match the legal name on your identification documents</span>
+</div>
+<!-- Account Number & Sort Code -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">
+              Account Number <span class="text-red-500">*</span>
+</label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2.5 px-3.5 text-slate-800 font-mono tracking-widest" maxlength="8" placeholder="e.g. 12345678" type="text"/>
+<span class="text-[11px] text-slate-500 mt-1 block">Must be exactly 8 numeric digits</span>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">
+              Sort Code <span class="text-red-500">*</span>
+</label>
+<input class="w-full text-xs rounded-lg border-slate-300 shadow-xs focus:border-blue-600 focus:ring-blue-600 bg-white py-2.5 px-3.5 text-slate-800 font-mono tracking-widest" maxlength="8" placeholder="e.g. 20-45-78" type="text"/>
+<span class="text-[11px] text-slate-500 mt-1 block">Formatted as 6 digits (e.g. 20-45-78)</span>
+</div>
+</div>
+<!-- Proof of Bank Details Section -->
+<div class="pt-2">
+<label class="block text-xs font-semibold text-slate-700 mb-1">
+            Proof of Bank Account Details <span class="text-red-500">*</span>
+</label>
+<p class="text-[11px] text-slate-500 mb-3">
+            Recent bank statement, welcome letter, or certified bank app statement dated within the last 3 months confirming your name, sort code, and account number.
+          </p>
+<!-- Upload Dropzone for Statement -->
+<div class="dropzone-dashed rounded-xl p-6 bg-slate-50/70 text-center cursor-pointer flex flex-col items-center justify-center">
+<div class="w-11 h-11 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-2 shadow-xs">
+<!-- PDF icon -->
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold text-slate-800">Attach Bank Statement PDF <span class="text-red-500">*</span></p>
+<p class="text-[11px] text-slate-500 mt-1">Drag and drop bank statement PDF or <span class="text-blue-600 font-medium underline">Browse Files</span></p>
+<span class="inline-block mt-3 px-2.5 py-0.5 rounded-full bg-slate-200/80 text-[10px] font-medium text-slate-600">
+              Accepted format: PDF only • Max file size: 10MB
+            </span>
+</div>
+<!-- Sample Verified / Preview Badge (Simulated Pre-uploaded or Ready State) -->
+<div class="mt-3 flex items-center justify-between p-2.5 bg-blue-50/50 border border-blue-100 rounded-lg">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 bg-red-100 text-red-600 rounded flex items-center justify-center text-[10px] font-bold">PDF</span>
+<div>
+<p class="text-xs font-medium text-slate-800">Barclays_Bank_Statement_Jan2025.pdf</p>
+<p class="text-[10px] text-slate-500">1.4 MB • Verified Name Match</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-500 p-1 text-xs font-semibold transition-colors" title="Remove attachment" type="button">
+              ✕
+            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Card2_BankDetails -->
+<!-- BEGIN: BottomNavigation -->
+<div class="flex flex-col sm:flex-row items-center justify-between pt-3 gap-4" data-purpose="form-actions">
+<!-- Save Draft Button -->
+<button class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs" type="button">
+<svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+        Save Draft &amp; Exit
+      </button>
+<!-- Continue to Step 4 Button -->
+<button class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#091524] text-xs font-semibold text-white hover:bg-slate-800 transition-all shadow-md group" type="button">
+<span>Save &amp; Submit</span>
+<svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Security & Compliance reassurance footer note -->
+
+<!-- END: BottomNavigation -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: InteractiveScripts -->
+<script data-purpose="tab-switcher">
+    function switchDocType(type) {
+      const views = ['passport', 'idcard', 'brp'];
+      
+      views.forEach(v => {
+        const viewEl = document.getElementById('view-' + v);
+        const btnEl = document.getElementById('btn-' + v);
+        
+        if (v === type) {
+          viewEl.classList.remove('hidden');
+          btnEl.className = 'pill-active py-2.5 px-4 text-xs font-semibold rounded-lg border transition-all text-center flex items-center justify-center space-x-2 shadow-xs';
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.className = 'pill-inactive py-2.5 px-4 text-xs font-medium rounded-lg border transition-all text-center flex items-center justify-center space-x-2 shadow-xs';
+        }
+      });
+    }
+
+    function toggleBrpSubtype(subtype) {
+      const physicalContainer = document.getElementById('brp-physical-container');
+      if (subtype === 'physical_brp') {
+        physicalContainer.classList.remove('hidden');
+      } else {
+        physicalContainer.classList.add('hidden');
+      }
+    }
+  </script>
+<!-- END: InteractiveScripts -->
+</body></html>

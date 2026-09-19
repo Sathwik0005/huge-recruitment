@@ -53,9 +53,11 @@ export async function POST(request: Request) {
   }
 
   if (isSubmit) {
+    // Re-submitting always re-locks the profile, even if an admin had
+    // temporarily unlocked it for this candidate to make a change.
     const completedProfile = await prisma.candidateProfile.update({
       where: { userId: session.user.id },
-      data: { onboardingStep: 3, step3CompletedAt: new Date() },
+      data: { onboardingStep: 3, step3CompletedAt: new Date(), editingUnlockedByAdmin: false },
     });
     return NextResponse.json({ candidateProfile: completedProfile });
   }

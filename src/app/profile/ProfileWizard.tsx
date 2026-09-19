@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RegistrationHero } from "./RegistrationHero";
 import { Step1Form, type Step1InitialValues } from "./Step1Form";
 import { Step2Form, type Step2InitialValues, type WorkReferenceValue } from "./Step2Form";
 import { Step3Form, type Step3InitialValues } from "./Step3Form";
+import { LockedToast } from "./LockedToast";
+
+const LOCKED_MESSAGE = "Your profile has been submitted and is locked. Contact us if something needs to change.";
+const SUBMITTED_REDIRECT_DELAY_MS = 5000;
 
 interface ProfileWizardProps {
   firstName: string;
@@ -13,6 +17,8 @@ interface ProfileWizardProps {
   email: string;
   avatarUrl: string | null;
   highestReachableStep: number;
+  isSubmitted: boolean;
+  editingUnlockedByAdmin: boolean;
   step1InitialValues: Step1InitialValues | null;
   step2InitialValues: Step2InitialValues | null;
   initialWorkReferences: WorkReferenceValue[];
@@ -31,6 +37,8 @@ export function ProfileWizard({
   email,
   avatarUrl,
   highestReachableStep: initialHighestReachableStep,
+  isSubmitted,
+  editingUnlockedByAdmin,
   step1InitialValues,
   step2InitialValues,
   initialWorkReferences,
@@ -40,6 +48,21 @@ export function ProfileWizard({
   const [activeStep, setActiveStep] = useState(initialHighestReachableStep);
   const [highestReachableStep, setHighestReachableStep] = useState(initialHighestReachableStep);
   const [avatarSubmitError, setAvatarSubmitError] = useState<string | null>(null);
+  const [lockedToastMessage, setLockedToastMessage] = useState<string | null>(null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
+
+  function showLockedToast() {
+    setLockedToastMessage(LOCKED_MESSAGE);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setLockedToastMessage(null), 3000);
+  }
 
   function handleSelectStep(step: number) {
     if (step > highestReachableStep) return;
@@ -56,8 +79,41 @@ export function ProfileWizard({
     setActiveStep(3);
   }
 
+  function handleSubmitted() {
+    setJustSubmitted(true);
+    setTimeout(() => router.push("/"), SUBMITTED_REDIRECT_DELAY_MS);
+  }
+
+  const readOnly = isSubmitted && !editingUnlockedByAdmin;
+
+  if (justSubmitted) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-gutter">
+        <div className="max-w-md w-full text-center bg-surface-container-lowest rounded-2xl shadow-md p-8 space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-candidate-navy-dark flex items-center justify-center">
+            <span className="material-symbols-outlined text-white text-[32px]" aria-hidden="true">
+              check_circle
+            </span>
+          </div>
+          <h1 className="text-headline-md text-candidate-text-heading">Your profile has been submitted</h1>
+          <p className="text-body-md text-candidate-secondary">
+            Thank you — our team will review your details shortly. Redirecting you to the homepage...
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="h-11 px-6 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-md font-bold transition-colors"
+          >
+            Continue Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col w-full">
+      <LockedToast message={lockedToastMessage} />
       <RegistrationHero
         firstName={firstName}
         lastName={lastName}
@@ -67,22 +123,36 @@ export function ProfileWizard({
         highestReachableStep={highestReachableStep}
         onSelectStep={handleSelectStep}
         avatarSubmitError={activeStep === 3 ? avatarSubmitError : null}
+        isSubmitted={isSubmitted}
+        editingUnlockedByAdmin={editingUnlockedByAdmin}
+        onLockedInteraction={showLockedToast}
       />
       <div className="w-full py-10 px-gutter">
         <div className="max-w-4xl mx-auto">
-          {activeStep === 1 && <Step1Form initialValues={step1InitialValues} onContinue={handleStep1Continue} />}
+          {activeStep === 1 && (
+            <Step1Form
+              initialValues={step1InitialValues}
+              onContinue={handleStep1Continue}
+              readOnly={readOnly}
+              onLockedInteraction={showLockedToast}
+            />
+          )}
           {activeStep === 2 && (
             <Step2Form
               initialValues={step2InitialValues}
               initialWorkReferences={initialWorkReferences}
               onContinue={handleStep2Continue}
+              readOnly={readOnly}
+              onLockedInteraction={showLockedToast}
             />
           )}
           {activeStep === 3 && (
             <Step3Form
               initialValues={step3InitialValues}
-              onSubmitted={() => router.push("/")}
+              onSubmitted={handleSubmitted}
               onAvatarMissing={() => setAvatarSubmitError("A profile picture is required before you can submit.")}
+              readOnly={readOnly}
+              onLockedInteraction={showLockedToast}
             />
           )}
         </div>
