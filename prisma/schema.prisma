@@ -296,6 +296,17 @@ enum Gender {
   OTHER
 }
 
+enum RightToWorkDocumentType {
+  PASSPORT
+  ID_CARD
+  BRP_EVISA
+}
+
+enum BrpSubtype {
+  PHYSICAL_BRP
+  EVISA
+}
+
 model CandidateProfile {
   id     String @id @default(cuid())
   userId String @unique
@@ -347,6 +358,26 @@ model CandidateProfile {
 
   // Step 2 — Additional Information
   referralSource ReferralSource?
+
+  step3CompletedAt DateTime?
+
+  // Step 3 — Proof of Right to Work
+  rightToWorkDocumentType             RightToWorkDocumentType?
+  brpSubtype                          BrpSubtype?
+  visaExpiryDate                      DateTime?
+  rightToWorkShareCode                String?
+  rightToWorkShareCodeExpiryDate      DateTime?
+  rightToWorkDocFrontS3Key            String?
+  rightToWorkDocFrontOriginalFilename String?
+  rightToWorkDocBackS3Key             String?
+  rightToWorkDocBackOriginalFilename  String?
+
+  // Step 3 — Bank Details
+  bankAccountHolderName         String?
+  bankAccountNumber             String?
+  bankSortCode                  String?
+  bankStatementS3Key            String?
+  bankStatementOriginalFilename String?
 
   workReferences CandidateWorkReference[]
 
