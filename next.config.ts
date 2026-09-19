@@ -30,11 +30,15 @@ const CSP_DIRECTIVES = [
   // blob: is needed for the candidate registration avatar upload's local
   // preview (URL.createObjectURL on the just-picked file, before the S3
   // upload round-trip returns a real signed URL) — see AvatarUpload.tsx.
-  // https://*.s3.*.amazonaws.com covers the signed GetObject URL the
+  // https://*.s3.eu-west-2.amazonaws.com covers the signed GetObject URL the
   // candidate avatar is displayed from (virtual-hosted-style S3 bucket
-  // domain, e.g. https://<bucket>.s3.<region>.amazonaws.com) — see
-  // src/lib/candidate-avatar.ts's getSignedAvatarUrl().
-  "img-src 'self' data: blob: https://res.cloudinary.com https://media.istockphoto.com https://thumbs.dreamstime.com https://*.s3.*.amazonaws.com",
+  // domain, e.g. https://<bucket>.s3.eu-west-2.amazonaws.com — bucket name is
+  // the only variable part; region is fixed by AWS_REGION) — see
+  // src/lib/candidate-avatar.ts's getSignedAvatarUrl(). CSP host-source
+  // syntax only allows a single leading "*." wildcard label, so a pattern
+  // with two wildcards (e.g. "*.s3.*.amazonaws.com") is invalid and gets
+  // silently dropped by the browser rather than matching anything.
+  "img-src 'self' data: blob: https://res.cloudinary.com https://media.istockphoto.com https://thumbs.dreamstime.com https://*.s3.eu-west-2.amazonaws.com",
   "media-src 'self' https://res.cloudinary.com",
   "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://huge-recruitment.firebaseapp.com https://vercel.com https://*.public.blob.vercel-storage.com",
   "frame-src 'self' https://huge-recruitment.firebaseapp.com https://accounts.google.com https://www.google.com https://apis.google.com",
