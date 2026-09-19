@@ -173,9 +173,11 @@ async function saveProfile(
 export function Step2Form({
   initialValues,
   initialWorkReferences,
+  onContinue,
 }: {
   initialValues: Step2InitialValues | null;
   initialWorkReferences: WorkReferenceValue[];
+  onContinue: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(toFormValues(initialValues));
@@ -312,8 +314,7 @@ export function Step2Form({
         });
         return;
       }
-      // TODO: switch to step 3 once that spec exists.
-      router.push("/");
+      onContinue();
     } finally {
       setContinuing(false);
     }
@@ -889,7 +890,7 @@ export function Step2Form({
         </h2>
         <div>
           <label className={labelClass} htmlFor="referral-source">
-            How did you hear about us? <span className="text-error">*</span>
+            How did you hear about us?
           </label>
           <select
             id="referral-source"

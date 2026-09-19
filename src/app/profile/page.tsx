@@ -6,6 +6,7 @@ import { getSignedAvatarUrl } from "@/lib/candidate-avatar";
 import { ProfileWizard } from "./ProfileWizard";
 import type { Step1InitialValues } from "./Step1Form";
 import type { Step2InitialValues, WorkReferenceValue } from "./Step2Form";
+import type { Step3InitialValues } from "./Step3Form";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 // Number of onboarding steps that actually have a built form/tab. Keep this
 // in lockstep with STEP_LABELS in RegistrationHero.tsx as later steps ship —
 // a step without UI must never become "reachable".
-const TOTAL_BUILT_STEPS = 2;
+const TOTAL_BUILT_STEPS = 3;
 
 export default async function ProfilePage() {
   const result = await requireVerifiedSession();
@@ -79,6 +80,27 @@ export default async function ProfilePage() {
       }
     : null;
 
+  const step3InitialValues: Step3InitialValues | null = candidateProfile
+    ? {
+        rightToWorkDocumentType: candidateProfile.rightToWorkDocumentType,
+        brpSubtype: candidateProfile.brpSubtype,
+        visaExpiryDate: candidateProfile.visaExpiryDate ? candidateProfile.visaExpiryDate.toISOString().slice(0, 10) : null,
+        rightToWorkShareCode: candidateProfile.rightToWorkShareCode,
+        rightToWorkShareCodeExpiryDate: candidateProfile.rightToWorkShareCodeExpiryDate
+          ? candidateProfile.rightToWorkShareCodeExpiryDate.toISOString().slice(0, 10)
+          : null,
+        rightToWorkDocFrontS3Key: candidateProfile.rightToWorkDocFrontS3Key,
+        rightToWorkDocFrontOriginalFilename: candidateProfile.rightToWorkDocFrontOriginalFilename,
+        rightToWorkDocBackS3Key: candidateProfile.rightToWorkDocBackS3Key,
+        rightToWorkDocBackOriginalFilename: candidateProfile.rightToWorkDocBackOriginalFilename,
+        bankAccountHolderName: candidateProfile.bankAccountHolderName,
+        bankAccountNumber: candidateProfile.bankAccountNumber,
+        bankSortCode: candidateProfile.bankSortCode,
+        bankStatementS3Key: candidateProfile.bankStatementS3Key,
+        bankStatementOriginalFilename: candidateProfile.bankStatementOriginalFilename,
+      }
+    : null;
+
   const initialWorkReferences: WorkReferenceValue[] =
     candidateProfile?.workReferences.map((reference) => ({
       jobTitle: reference.jobTitle,
@@ -107,6 +129,7 @@ export default async function ProfilePage() {
         step1InitialValues={step1InitialValues}
         step2InitialValues={step2InitialValues}
         initialWorkReferences={initialWorkReferences}
+        step3InitialValues={step3InitialValues}
       />
     </main>
   );

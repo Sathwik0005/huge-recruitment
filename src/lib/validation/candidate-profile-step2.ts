@@ -82,8 +82,8 @@ export const candidateProfileStep2ContinueSchema = z.object({
   emergencyContactName: z.string().trim().min(1, "Emergency contact name is required.").max(150),
   emergencyContactMobile: z.string().trim().min(1, "Emergency contact mobile is required.").max(20),
   emergencyContactRelationship: z.enum(relationshipValues, { message: "Please select a relationship." }),
-  referralSource: z.enum(referralSourceValues, { message: "Please tell us how you heard about us." }),
-  workReferences: z.array(workReferenceSchema).min(1, "Please add at least one work reference."),
+  referralSource: z.enum(referralSourceValues).optional(),
+  workReferences: z.array(workReferenceSchema).optional(),
 });
 
 export const candidateProfileStep2DraftSchema = z.object({

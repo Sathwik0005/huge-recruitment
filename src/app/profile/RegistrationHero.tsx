@@ -1,11 +1,12 @@
 import { AvatarUpload } from "./AvatarUpload";
 import { CloseButton } from "./CloseButton";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 3;
 
 const STEP_LABELS: Record<number, string> = {
   1: "Personal Details",
   2: "Work Information & References",
+  3: "Proof of Right to Work & Bank Details",
 };
 
 interface RegistrationHeroProps {
@@ -16,6 +17,7 @@ interface RegistrationHeroProps {
   activeStep: number;
   highestReachableStep: number;
   onSelectStep: (step: number) => void;
+  avatarSubmitError?: string | null;
 }
 
 export function RegistrationHero({
@@ -26,6 +28,7 @@ export function RegistrationHero({
   activeStep,
   highestReachableStep,
   onSelectStep,
+  avatarSubmitError,
 }: RegistrationHeroProps) {
   const stepLabel = STEP_LABELS[activeStep] ?? `Step ${activeStep}`;
   const progressPercent = Math.round((activeStep / TOTAL_STEPS) * 100);
@@ -36,19 +39,26 @@ export function RegistrationHero({
         <CloseButton />
         <div className="max-w-6xl mx-auto relative z-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-            <div className="lg:col-span-8 flex flex-row items-center gap-4">
-              <AvatarUpload initialAvatarUrl={avatarUrl} />
-              <div className="space-y-1.5 min-w-0">
-                <h1 className="text-headline-lg text-white tracking-tight truncate">
-                  {firstName} {lastName}
-                </h1>
-                <p className="text-body-md text-candidate-secondary-fixed flex items-center gap-2 truncate">
-                  <span className="material-symbols-outlined text-[18px] shrink-0" aria-hidden="true">
-                    mail
-                  </span>
-                  <span className="truncate">{email}</span>
-                </p>
+            <div className="lg:col-span-8 flex flex-col gap-2">
+              <div className="flex flex-row items-center gap-4">
+                <AvatarUpload initialAvatarUrl={avatarUrl} />
+                <div className="space-y-1.5 min-w-0">
+                  <h1 className="text-headline-lg text-white tracking-tight truncate">
+                    {firstName} {lastName}
+                  </h1>
+                  <p className="text-body-md text-candidate-secondary-fixed flex items-center gap-2 truncate">
+                    <span className="material-symbols-outlined text-[18px] shrink-0" aria-hidden="true">
+                      mail
+                    </span>
+                    <span className="truncate">{email}</span>
+                  </p>
+                </div>
               </div>
+              {avatarSubmitError && (
+                <p role="alert" aria-live="assertive" className="text-label-sm text-error bg-error-container text-on-error-container rounded-lg px-3 py-2 w-fit">
+                  {avatarSubmitError}
+                </p>
+              )}
             </div>
             <div className="lg:col-span-4 bg-candidate-navy-surface/90 rounded-xl p-4 shadow-lg space-y-3">
               <div className="flex items-center justify-between">

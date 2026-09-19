@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { RegistrationHero } from "./RegistrationHero";
 import { Step1Form, type Step1InitialValues } from "./Step1Form";
 import { Step2Form, type Step2InitialValues, type WorkReferenceValue } from "./Step2Form";
+import { Step3Form, type Step3InitialValues } from "./Step3Form";
 
 interface ProfileWizardProps {
   firstName: string;
@@ -14,6 +16,7 @@ interface ProfileWizardProps {
   step1InitialValues: Step1InitialValues | null;
   step2InitialValues: Step2InitialValues | null;
   initialWorkReferences: WorkReferenceValue[];
+  step3InitialValues: Step3InitialValues | null;
 }
 
 /**
@@ -31,9 +34,12 @@ export function ProfileWizard({
   step1InitialValues,
   step2InitialValues,
   initialWorkReferences,
+  step3InitialValues,
 }: ProfileWizardProps) {
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState(initialHighestReachableStep);
   const [highestReachableStep, setHighestReachableStep] = useState(initialHighestReachableStep);
+  const [avatarSubmitError, setAvatarSubmitError] = useState<string | null>(null);
 
   function handleSelectStep(step: number) {
     if (step > highestReachableStep) return;
@@ -43,6 +49,11 @@ export function ProfileWizard({
   function handleStep1Continue() {
     setHighestReachableStep((prev) => Math.max(prev, 2));
     setActiveStep(2);
+  }
+
+  function handleStep2Continue() {
+    setHighestReachableStep((prev) => Math.max(prev, 3));
+    setActiveStep(3);
   }
 
   return (
@@ -55,12 +66,24 @@ export function ProfileWizard({
         activeStep={activeStep}
         highestReachableStep={highestReachableStep}
         onSelectStep={handleSelectStep}
+        avatarSubmitError={activeStep === 3 ? avatarSubmitError : null}
       />
       <div className="w-full py-10 px-gutter">
         <div className="max-w-4xl mx-auto">
           {activeStep === 1 && <Step1Form initialValues={step1InitialValues} onContinue={handleStep1Continue} />}
           {activeStep === 2 && (
-            <Step2Form initialValues={step2InitialValues} initialWorkReferences={initialWorkReferences} />
+            <Step2Form
+              initialValues={step2InitialValues}
+              initialWorkReferences={initialWorkReferences}
+              onContinue={handleStep2Continue}
+            />
+          )}
+          {activeStep === 3 && (
+            <Step3Form
+              initialValues={step3InitialValues}
+              onSubmitted={() => router.push("/")}
+              onAvatarMissing={() => setAvatarSubmitError("A profile picture is required before you can submit.")}
+            />
           )}
         </div>
       </div>
