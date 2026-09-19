@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { candidateProfileContinueSchema } from "@/lib/validation/candidate-profile";
+import { COUNTRIES } from "@/data/countries";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 const inputClass =
   "w-full h-10 px-3 bg-surface-container-low text-candidate-text-heading rounded-lg text-body-md focus:outline-none focus:bg-surface-container-lowest focus:shadow-md transition-all";
@@ -61,15 +63,8 @@ const GENDER_OPTIONS = [
   { value: "OTHER", label: "Prefer Not" },
 ] as const;
 
-const NATIONALITY_OPTIONS = [
-  { value: "GB", label: "United Kingdom" },
-  { value: "IE", label: "Irish" },
-  { value: "PL", label: "Polish" },
-  { value: "RO", label: "Romanian" },
-  { value: "DE", label: "German" },
-  { value: "FR", label: "French" },
-  { value: "OTHER", label: "Other / Non-EU/UK" },
-] as const;
+// Static, computed once at module load — COUNTRIES never changes at runtime.
+const NATIONALITY_SELECT_OPTIONS = COUNTRIES.map((country) => ({ value: country.code, label: country.name }));
 
 const DIAL_CODE_OPTIONS = [
   { value: "+44", label: "+44" },
@@ -378,19 +373,16 @@ export function Step1Form({ initialValues, onContinue, readOnly = false, onLocke
             <label className={labelClass} htmlFor="nationality-select">
               Nationality <span className="text-error">*</span>
             </label>
-            <select
+            <SearchableSelect
               id="nationality-select"
-              className={inputClass}
               value={values.nationality}
-              onChange={(e) => set("nationality", e.target.value)}
-            >
-              <option value="">Select nationality</option>
-              {NATIONALITY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => set("nationality", value)}
+              options={NATIONALITY_SELECT_OPTIONS}
+              placeholder="Select nationality"
+              searchPlaceholder="Search countries..."
+              noResultsText="No nationality found"
+              disabled={readOnly}
+            />
             {errors.nationality && (
               <p role="alert" aria-live="assertive" className={errorTextClass}>
                 {errors.nationality}
