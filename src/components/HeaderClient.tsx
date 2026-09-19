@@ -63,9 +63,20 @@ export default function HeaderClient({ isLoggedIn, isAdmin }: HeaderClientProps)
             );
           })}
         </nav>
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-3">
           {isLoggedIn ? (
-            <LogoutButton />
+            <>
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 font-body-md text-body-md text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg transition-all duration-200"
+              >
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                  badge
+                </span>
+                My Profile
+              </Link>
+              <LogoutButton />
+            </>
           ) : (
             <>
               <Link
@@ -118,7 +129,19 @@ export default function HeaderClient({ isLoggedIn, isAdmin }: HeaderClientProps)
             })}
             <div className="flex flex-col gap-2 py-3">
               {isLoggedIn ? (
-                <LogoutButton />
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 font-body-md text-body-md text-primary px-4 py-3 rounded-lg border border-primary transition-all duration-200"
+                  >
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                      badge
+                    </span>
+                    My Profile
+                  </Link>
+                  <LogoutButton />
+                </>
               ) : (
                 <>
                   <Link

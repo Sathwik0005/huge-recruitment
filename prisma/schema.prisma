@@ -38,6 +38,8 @@ model User {
 
   createdJobs Job[] @relation("JobCreatedBy")
   updatedJobs Job[] @relation("JobUpdatedBy")
+
+  candidateProfile CandidateProfile?
 }
 
 enum SectorName {
@@ -238,6 +240,61 @@ model JobBenefit {
   displayOrder Int    @default(0)
 
   @@index([jobId])
+}
+
+enum CandidateTitle {
+  MR
+  MRS
+  MISS
+  MS
+  DR
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model CandidateProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  onboardingStep   Int       @default(1)
+  step1CompletedAt DateTime?
+
+  // Section A — Personal Details
+  title       CandidateTitle?
+  firstName   String?
+  middleName  String?
+  surname     String?
+  gender      Gender?
+  dateOfBirth DateTime?
+  nationality String?
+  niNumber    String?
+
+  // Section B — Eligibility & Declarations
+  isStudying            Boolean?
+  hasUnspentConvictions Boolean?
+
+  // Section C — Contact Details
+  mobileDialCode String?
+  mobileNumber   String?
+  avatarS3Key    String?
+
+  // Section D — Residential Address
+  addressLine1   String?
+  addressLine2   String?
+  townOrCity     String?
+  countyOrRegion String?
+  postcode       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model JobApplication {

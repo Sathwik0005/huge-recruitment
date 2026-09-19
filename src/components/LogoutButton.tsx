@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/config";
 
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string } = {}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +26,10 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={loading}
-      className="h-11 px-6 border border-outline-variant text-primary text-label-md font-bold rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-60"
+      className={
+        className ??
+        "h-11 px-6 border border-outline-variant text-primary text-label-md font-bold rounded-lg hover:bg-surface-container-low transition-all disabled:opacity-60"
+      }
     >
       {loading ? "Signing out..." : "Sign Out"}
     </button>

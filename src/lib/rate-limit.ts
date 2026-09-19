@@ -7,7 +7,10 @@ type RateLimitKind =
   | "cvUpload"
   | "verificationEmail"
   | "forgotPassword"
-  | "verificationComplete";
+  | "verificationComplete"
+  | "candidateProfileSave"
+  | "candidateAvatarUpload"
+  | "postcodeLookup";
 
 let ratelimiters: Record<RateLimitKind, Ratelimit> | null = null;
 
@@ -44,6 +47,21 @@ function getRatelimiters() {
       redis,
       limiter: Ratelimit.slidingWindow(10, "10 m"),
       prefix: "ratelimit:verification-complete",
+    }),
+    candidateProfileSave: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, "10 m"),
+      prefix: "ratelimit:candidate-profile-save",
+    }),
+    candidateAvatarUpload: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "10 m"),
+      prefix: "ratelimit:candidate-avatar-upload",
+    }),
+    postcodeLookup: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, "10 m"),
+      prefix: "ratelimit:postcode-lookup",
     }),
   };
   return ratelimiters;
