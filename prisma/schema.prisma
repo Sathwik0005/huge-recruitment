@@ -242,6 +242,38 @@ model JobBenefit {
   @@index([jobId])
 }
 
+enum HoursAvailability {
+  ZERO_TO_TEN
+  TEN_TO_TWENTY
+  TWENTY_TO_THIRTY
+  THIRTY_PLUS
+}
+
+enum TransportMode {
+  CAR
+  BUS
+  TAXI
+  CYCLE
+  WALK
+  TRAIN
+}
+
+enum EmergencyContactRelationship {
+  SPOUSE_PARTNER
+  RELATIVE_FAMILY
+  FRIEND
+  OTHER
+}
+
+enum ReferralSource {
+  INDEED_JOB_BOARD
+  GOOGLE_SEARCH
+  SOCIAL_MEDIA
+  FRIEND_COLLEAGUE_REFERRAL
+  JOBCENTRE_PLUS
+  OTHER
+}
+
 enum CandidateTitle {
   MR
   MRS
@@ -291,10 +323,50 @@ model CandidateProfile {
   countyOrRegion String?
   postcode       String?
 
+  step2CompletedAt DateTime?
+
+  // Step 2 — Work Information
+  preferredWorkLocation String?
+  hoursAvailability     HoursAvailability?
+  transportMode         TransportMode?
+  shoeSize              Decimal?
+
+  // Step 2 — Emergency Contact
+  emergencyContactName         String?
+  emergencyContactMobile       String?
+  emergencyContactRelationship EmergencyContactRelationship?
+
+  // Step 2 — Additional Information
+  referralSource ReferralSource?
+
+  workReferences CandidateWorkReference[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model CandidateWorkReference {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+
+  jobTitle       String
+  companyName    String
+  companyAddress String?
+  startDate      DateTime
+  endDate        DateTime?
+  isCurrentJob   Boolean  @default(false)
+  managerName    String?
+  managerMobile  String?
+  managerEmail   String?
+  displayOrder   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateProfileId])
 }
 
 model JobApplication {

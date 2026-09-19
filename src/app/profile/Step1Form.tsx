@@ -116,7 +116,12 @@ async function saveProfile(intent: "draft" | "continue", values: FormValues) {
   return { ok: response.ok, data };
 }
 
-export function Step1Form({ initialValues }: { initialValues: Step1InitialValues | null }) {
+interface Step1FormProps {
+  initialValues: Step1InitialValues | null;
+  onContinue: () => void;
+}
+
+export function Step1Form({ initialValues, onContinue }: Step1FormProps) {
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(toFormValues(initialValues));
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -192,8 +197,7 @@ export function Step1Form({ initialValues }: { initialValues: Step1InitialValues
         setErrors({ form: data.error ?? "Something went wrong. Please try again." });
         return;
       }
-      // TODO: route to step 2 of the wizard once that spec exists.
-      router.push("/");
+      onContinue();
     } finally {
       setContinuing(false);
     }

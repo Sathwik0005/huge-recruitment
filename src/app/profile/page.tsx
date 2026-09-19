@@ -3,12 +3,18 @@ import type { Metadata } from "next";
 import { requireVerifiedSession } from "@/lib/require-verified-session";
 import { prisma } from "@/lib/prisma";
 import { getSignedAvatarUrl } from "@/lib/candidate-avatar";
-import { RegistrationHero } from "./RegistrationHero";
-import { Step1Form, type Step1InitialValues } from "./Step1Form";
+import { ProfileWizard } from "./ProfileWizard";
+import type { Step1InitialValues } from "./Step1Form";
+import type { Step2InitialValues, WorkReferenceValue } from "./Step2Form";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
+
+// Number of onboarding steps that actually have a built form/tab. Keep this
+// in lockstep with STEP_LABELS in RegistrationHero.tsx as later steps ship —
+// a step without UI must never become "reachable".
+const TOTAL_BUILT_STEPS = 2;
 
 export default async function ProfilePage() {
   const result = await requireVerifiedSession();
@@ -20,7 +26,10 @@ export default async function ProfilePage() {
       redirect("/login");
   }
 
-  const candidateProfile = await prisma.candidateProfile.findUnique({ where: { userId: result.user.id } });
+  const candidateProfile = await prisma.candidateProfile.findUnique({
+    where: { userId: result.user.id },
+    include: { workReferences: { orderBy: { displayOrder: "asc" } } },
+  });
 
   let avatarUrl: string | null = null;
   if (candidateProfile?.avatarS3Key) {
@@ -33,7 +42,7 @@ export default async function ProfilePage() {
     }
   }
 
-  const initialValues: Step1InitialValues | null = candidateProfile
+  const step1InitialValues: Step1InitialValues | null = candidateProfile
     ? {
         title: candidateProfile.title,
         firstName: candidateProfile.firstName,
@@ -55,23 +64,48 @@ export default async function ProfilePage() {
       }
     : null;
 
+  const step2InitialValues: Step2InitialValues | null = candidateProfile
+    ? {
+        preferredWorkLocation: candidateProfile.preferredWorkLocation,
+        hoursAvailability: candidateProfile.hoursAvailability,
+        transportMode: candidateProfile.transportMode,
+        shoeSize: candidateProfile.shoeSize ? Number(candidateProfile.shoeSize) : null,
+        emergencyContactName: candidateProfile.emergencyContactName,
+        emergencyContactMobile: candidateProfile.emergencyContactMobile,
+        emergencyContactRelationship: candidateProfile.emergencyContactRelationship,
+        referralSource: candidateProfile.referralSource,
+      }
+    : null;
+
+  const initialWorkReferences: WorkReferenceValue[] =
+    candidateProfile?.workReferences.map((reference) => ({
+      jobTitle: reference.jobTitle,
+      companyName: reference.companyName,
+      companyAddress: reference.companyAddress ?? "",
+      startDate: reference.startDate.toISOString().slice(0, 7),
+      endDate: reference.endDate ? reference.endDate.toISOString().slice(0, 7) : "",
+      isCurrentJob: reference.isCurrentJob,
+      managerName: reference.managerName ?? "",
+      managerMobile: reference.managerMobile ?? "",
+      managerEmail: reference.managerEmail ?? "",
+    })) ?? [];
+
+  const highestReachableStep = candidateProfile
+    ? Math.min(candidateProfile.onboardingStep, TOTAL_BUILT_STEPS)
+    : 1;
+
   return (
     <main className="w-full bg-surface min-h-screen">
-      <div className="flex flex-col w-full">
-        <RegistrationHero
-          firstName={result.user.firstName}
-          lastName={result.user.lastName}
-          email={result.user.email}
-          avatarUrl={avatarUrl}
-          currentStep={1}
-          stepLabel="Personal Details"
-        />
-        <div className="w-full py-10 px-gutter">
-          <div className="max-w-4xl mx-auto">
-            <Step1Form initialValues={initialValues} />
-          </div>
-        </div>
-      </div>
+      <ProfileWizard
+        firstName={result.user.firstName}
+        lastName={result.user.lastName}
+        email={result.user.email}
+        avatarUrl={avatarUrl}
+        highestReachableStep={highestReachableStep}
+        step1InitialValues={step1InitialValues}
+        step2InitialValues={step2InitialValues}
+        initialWorkReferences={initialWorkReferences}
+      />
     </main>
   );
 }
