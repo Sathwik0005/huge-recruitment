@@ -3,13 +3,19 @@ import { CloseButton } from "./CloseButton";
 
 const TOTAL_STEPS = 6;
 
+const STEP_LABELS: Record<number, string> = {
+  1: "Personal Details",
+  2: "Work Information & References",
+};
+
 interface RegistrationHeroProps {
   firstName: string;
   lastName: string;
   email: string;
   avatarUrl: string | null;
-  currentStep: number;
-  stepLabel: string;
+  activeStep: number;
+  highestReachableStep: number;
+  onSelectStep: (step: number) => void;
 }
 
 export function RegistrationHero({
@@ -17,10 +23,12 @@ export function RegistrationHero({
   lastName,
   email,
   avatarUrl,
-  currentStep,
-  stepLabel,
+  activeStep,
+  highestReachableStep,
+  onSelectStep,
 }: RegistrationHeroProps) {
-  const progressPercent = Math.round((currentStep / TOTAL_STEPS) * 100);
+  const stepLabel = STEP_LABELS[activeStep] ?? `Step ${activeStep}`;
+  const progressPercent = Math.round((activeStep / TOTAL_STEPS) * 100);
 
   return (
     <div className="flex flex-col w-full">
@@ -63,7 +71,7 @@ export function RegistrationHero({
                   ~3 mins remaining
                 </span>
                 <span className="text-white">
-                  Step {currentStep} of {TOTAL_STEPS}
+                  Step {activeStep} of {TOTAL_STEPS}
                 </span>
               </div>
             </div>
@@ -72,21 +80,38 @@ export function RegistrationHero({
       </section>
 
       <section className="w-full bg-surface-container-lowest shadow-sm sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-gutter flex justify-center">
-          <div className="py-3 px-4 flex items-center gap-3 relative">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-label-md shrink-0 bg-candidate-navy-dark text-white shadow-sm">
-              {currentStep}
-            </div>
-            <div className="min-w-0">
-              <span className="block text-label-sm text-candidate-secondary uppercase tracking-wider text-center">
-                Step {currentStep} of {TOTAL_STEPS}
+        <div className="max-w-6xl mx-auto px-gutter">
+          <nav aria-label="Registration steps" className="flex items-center gap-2 overflow-x-auto py-3 px-1">
+            {Array.from({ length: TOTAL_STEPS }, (_, index) => index + 1).map((step) => {
+              const reachable = step <= highestReachableStep;
+              const isActive = step === activeStep;
+              return (
+                <button
+                  key={step}
+                  type="button"
+                  disabled={!reachable}
+                  aria-current={isActive ? "step" : undefined}
+                  onClick={() => onSelectStep(step)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-label-md shrink-0 shadow-sm transition-colors ${
+                    isActive
+                      ? "bg-candidate-navy-dark text-white"
+                      : reachable
+                        ? "bg-surface-container text-candidate-text-heading hover:bg-surface-container-high cursor-pointer"
+                        : "bg-surface-container-low text-candidate-secondary opacity-40 cursor-not-allowed"
+                  }`}
+                >
+                  {step}
+                </button>
+              );
+            })}
+            <div className="min-w-0 ml-2">
+              <span className="block text-label-sm text-candidate-secondary uppercase tracking-wider">
+                Step {activeStep} of {TOTAL_STEPS}
               </span>
-              <span className="block text-label-md text-candidate-text-heading truncate text-center">
-                {stepLabel}
-              </span>
+              <span className="block text-label-md text-candidate-text-heading truncate">{stepLabel}</span>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-candidate-secondary rounded-t" />
-          </div>
+          </nav>
+          <div className="h-1 bg-candidate-secondary rounded-t" style={{ width: `${progressPercent}%` }} />
         </div>
       </section>
     </div>
