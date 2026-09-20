@@ -6,6 +6,7 @@ import { RegistrationHero } from "./RegistrationHero";
 import { Step1Form, type Step1InitialValues } from "./Step1Form";
 import { Step2Form, type Step2InitialValues, type WorkReferenceValue } from "./Step2Form";
 import { Step3Form, type Step3InitialValues } from "./Step3Form";
+import { Step4Form, type Step4InitialValues } from "./Step4Form";
 import { LockedToast } from "./LockedToast";
 
 const LOCKED_MESSAGE = "Your profile has been submitted and is locked. Contact us if something needs to change.";
@@ -23,6 +24,7 @@ interface ProfileWizardProps {
   step2InitialValues: Step2InitialValues | null;
   initialWorkReferences: WorkReferenceValue[];
   step3InitialValues: Step3InitialValues | null;
+  step4InitialValues: Step4InitialValues | null;
 }
 
 /**
@@ -43,6 +45,7 @@ export function ProfileWizard({
   step2InitialValues,
   initialWorkReferences,
   step3InitialValues,
+  step4InitialValues,
 }: ProfileWizardProps) {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(initialHighestReachableStep);
@@ -77,6 +80,11 @@ export function ProfileWizard({
   function handleStep2Continue() {
     setHighestReachableStep((prev) => Math.max(prev, 3));
     setActiveStep(3);
+  }
+
+  function handleStep3Continue() {
+    setHighestReachableStep((prev) => Math.max(prev, 4));
+    setActiveStep(4);
   }
 
   function handleSubmitted() {
@@ -122,7 +130,7 @@ export function ProfileWizard({
         activeStep={activeStep}
         highestReachableStep={highestReachableStep}
         onSelectStep={handleSelectStep}
-        avatarSubmitError={activeStep === 3 ? avatarSubmitError : null}
+        avatarSubmitError={activeStep === 4 ? avatarSubmitError : null}
         isSubmitted={isSubmitted}
         editingUnlockedByAdmin={editingUnlockedByAdmin}
         onLockedInteraction={showLockedToast}
@@ -149,6 +157,14 @@ export function ProfileWizard({
           {activeStep === 3 && (
             <Step3Form
               initialValues={step3InitialValues}
+              onContinue={handleStep3Continue}
+              readOnly={readOnly}
+              onLockedInteraction={showLockedToast}
+            />
+          )}
+          {activeStep === 4 && (
+            <Step4Form
+              initialValues={step4InitialValues}
               onSubmitted={handleSubmitted}
               onAvatarMissing={() => setAvatarSubmitError("A profile picture is required before you can submit.")}
               readOnly={readOnly}

@@ -110,16 +110,14 @@ async function saveProfile(intent: "draft" | "submit", values: FormValues) {
 
 interface Step3FormProps {
   initialValues: Step3InitialValues | null;
-  onSubmitted: () => void;
-  onAvatarMissing: () => void;
+  onContinue: () => void;
   readOnly?: boolean;
   onLockedInteraction?: () => void;
 }
 
 export function Step3Form({
   initialValues,
-  onSubmitted,
-  onAvatarMissing,
+  onContinue,
   readOnly = false,
   onLockedInteraction,
 }: Step3FormProps) {
@@ -127,7 +125,7 @@ export function Step3Form({
   const [values, setValues] = useState<FormValues>(toFormValues(initialValues));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [savingDraft, setSavingDraft] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [continuing, setContinuing] = useState(false);
 
   function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -148,7 +146,7 @@ export function Step3Form({
     }
   }
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleContinue(event: FormEvent) {
     event.preventDefault();
     setErrors({});
 
@@ -165,27 +163,24 @@ export function Step3Form({
       return;
     }
 
-    setSubmitting(true);
+    setContinuing(true);
     try {
       const { ok, data } = await saveProfile("submit", values);
       if (!ok) {
-        if (data.field === "avatar") {
-          onAvatarMissing();
-        }
         setErrors({ form: data.error ?? "Something went wrong. Please try again." });
         return;
       }
-      onSubmitted();
+      onContinue();
     } finally {
-      setSubmitting(false);
+      setContinuing(false);
     }
   }
 
-  const busy = savingDraft || submitting;
+  const busy = savingDraft || continuing;
   const docType = values.rightToWorkDocumentType;
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+    <form className="space-y-6" onSubmit={handleContinue} noValidate>
       {errors.form && (
         <p
           role="alert"
@@ -618,7 +613,7 @@ export function Step3Form({
             disabled={busy}
             className="w-full sm:w-auto h-11 px-7 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            {submitting ? "Submitting..." : "Save & Submit"}
+            {continuing ? "Saving..." : "Save & Continue to Step 4"}
             <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
               arrow_forward
             </span>

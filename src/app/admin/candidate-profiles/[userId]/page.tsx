@@ -9,9 +9,10 @@ import { WorkPreferencesSection } from "./WorkPreferencesSection";
 import { WorkReferencesManager } from "./WorkReferencesManager";
 import { RightToWorkSection } from "./RightToWorkSection";
 import { BankDetailsSection } from "./BankDetailsSection";
+import { EmployeeDeclarationSection } from "./EmployeeDeclarationSection";
 import { AvatarEditor } from "./AvatarEditor";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 export default async function AdminCandidateProfileDetailPage({
   params,
@@ -46,7 +47,7 @@ export default async function AdminCandidateProfileDetailPage({
     }
   }
 
-  const statusLabel = profile.step3CompletedAt ? "Submitted" : `Step ${profile.onboardingStep} of ${TOTAL_STEPS}`;
+  const statusLabel = profile.step4CompletedAt ? "Submitted" : `Step ${profile.onboardingStep} of ${TOTAL_STEPS}`;
 
   const workReferences = profile.workReferences.map((reference) => ({
     id: reference.id,
@@ -80,7 +81,7 @@ export default async function AdminCandidateProfileDetailPage({
             Onboarding status: <span className="font-bold">{statusLabel}</span>
           </p>
         </div>
-        {profile.step3CompletedAt && (
+        {profile.step4CompletedAt && (
           <EditingUnlockToggle userId={user.id} unlocked={profile.editingUnlockedByAdmin} />
         )}
       </div>
@@ -155,6 +156,13 @@ export default async function AdminCandidateProfileDetailPage({
           bankSortCode: profile.bankSortCode,
           bankStatementOriginalFilename: profile.bankStatementOriginalFilename,
           hasBankStatement: Boolean(profile.bankStatementS3Key),
+        }}
+      />
+
+      <EmployeeDeclarationSection
+        values={{
+          declarationFullName: profile.declarationFullName,
+          declarationAcceptedAt: profile.declarationAcceptedAt,
         }}
       />
     </div>

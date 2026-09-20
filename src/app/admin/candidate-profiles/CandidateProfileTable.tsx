@@ -7,14 +7,14 @@ type CandidateProfileRow = {
   lastName: string;
   email: string;
   onboardingStep: number;
-  step3CompletedAt: Date | null;
+  step4CompletedAt: Date | null;
   editingUnlockedByAdmin: boolean;
 };
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 function statusLabel(row: CandidateProfileRow): string {
-  if (row.step3CompletedAt) return "Submitted";
+  if (row.step4CompletedAt) return "Submitted";
   return `Step ${row.onboardingStep} of ${TOTAL_STEPS}`;
 }
 
@@ -50,10 +50,10 @@ export function CandidateProfileTable({ rows }: { rows: CandidateProfileRow[] })
               </td>
               <td className="px-4 py-3">{statusLabel(row)}</td>
               <td className="px-4 py-3 text-label-sm text-on-surface-variant">
-                {row.step3CompletedAt ? row.step3CompletedAt.toLocaleDateString("en-GB") : "—"}
+                {row.step4CompletedAt ? row.step4CompletedAt.toLocaleDateString("en-GB") : "—"}
               </td>
               <td className="px-4 py-3">
-                {row.step3CompletedAt ? (
+                {row.step4CompletedAt ? (
                   <EditingUnlockToggle userId={row.userId} unlocked={row.editingUnlockedByAdmin} />
                 ) : (
                   <span className="text-label-sm text-on-surface-variant">Not submitted yet</span>

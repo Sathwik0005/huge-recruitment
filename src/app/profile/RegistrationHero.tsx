@@ -1,12 +1,13 @@
 import { AvatarUpload } from "./AvatarUpload";
 import { CloseButton } from "./CloseButton";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 const STEP_LABELS: Record<number, string> = {
   1: "Personal Details",
   2: "Work Information & References",
   3: "Proof of Right to Work & Bank Details",
+  4: "Employee Declaration",
 };
 
 // Rough time to complete each section on its own — used to derive a
@@ -16,6 +17,7 @@ const STEP_TIME_ESTIMATES_MIN: Record<number, number> = {
   1: 4,
   2: 3,
   3: 5,
+  4: 2,
 };
 
 function estimateMinutesRemaining(activeStep: number): number {

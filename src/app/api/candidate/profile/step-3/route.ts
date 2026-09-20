@@ -11,12 +11,14 @@ import { parseCandidateProfileStep3Input } from "@/lib/validation/candidate-prof
  * session's own `User` row. Unlike Step 2, there's no repeatable child table
  * here, so a plain upsert suffices (no `$transaction` needed).
  *
- * On `intent: "submit"`, the submitted fields are always persisted first —
- * even if the profile has no photo yet — so a candidate never loses typed
- * work just because they forgot to add one. Only advancing
- * `onboardingStep`/`step3CompletedAt` (and returning success) is gated on
- * `CandidateProfile.avatarS3Key` already being set, per the mandatory-photo
- * requirement for this, the final, step.
+ * As of spec 09, Step 3 is no longer the final step — Step 4 (Employee
+ * Declaration) is. `intent: "submit"` still sets `step3CompletedAt` (it's
+ * the onboarding-funnel "reached step 3" marker read by admin metrics/
+ * notifications) and advances `onboardingStep` to 3 so Step 4 becomes
+ * reachable, but — unlike before spec 09 — it never locks the profile
+ * read-only and has no mandatory-photo gate (that moved to
+ * `/api/candidate/profile/step-4`, whose `step4CompletedAt` is what actually
+ * locks the profile).
  */
 export async function POST(request: Request) {
   const identifier = getClientIdentifier(request);
@@ -45,21 +47,12 @@ export async function POST(request: Request) {
     update: { ...fields },
   });
 
-  if (isSubmit && !profile.avatarS3Key) {
-    return NextResponse.json(
-      { error: "A profile picture is required before you can submit.", field: "avatar" },
-      { status: 400 },
-    );
-  }
-
   if (isSubmit) {
-    // Re-submitting always re-locks the profile, even if an admin had
-    // temporarily unlocked it for this candidate to make a change.
-    const completedProfile = await prisma.candidateProfile.update({
+    const advancedProfile = await prisma.candidateProfile.update({
       where: { userId: session.user.id },
-      data: { onboardingStep: 3, step3CompletedAt: new Date(), editingUnlockedByAdmin: false },
+      data: { onboardingStep: 3, step3CompletedAt: new Date() },
     });
-    return NextResponse.json({ candidateProfile: completedProfile });
+    return NextResponse.json({ candidateProfile: advancedProfile });
   }
 
   return NextResponse.json({ candidateProfile: profile });

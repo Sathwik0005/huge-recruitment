@@ -7,6 +7,7 @@ import { ProfileWizard } from "./ProfileWizard";
 import type { Step1InitialValues } from "./Step1Form";
 import type { Step2InitialValues, WorkReferenceValue } from "./Step2Form";
 import type { Step3InitialValues } from "./Step3Form";
+import type { Step4InitialValues } from "./Step4Form";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 // Number of onboarding steps that actually have a built form/tab. Keep this
 // in lockstep with STEP_LABELS in RegistrationHero.tsx as later steps ship —
 // a step without UI must never become "reachable".
-const TOTAL_BUILT_STEPS = 3;
+const TOTAL_BUILT_STEPS = 4;
 
 export default async function ProfilePage() {
   const result = await requireVerifiedSession();
@@ -101,6 +102,15 @@ export default async function ProfilePage() {
       }
     : null;
 
+  const step4InitialValues: Step4InitialValues | null = candidateProfile
+    ? {
+        declarationFullName: candidateProfile.declarationFullName,
+        declarationAcceptedAt: candidateProfile.declarationAcceptedAt
+          ? candidateProfile.declarationAcceptedAt.toISOString()
+          : null,
+      }
+    : null;
+
   const initialWorkReferences: WorkReferenceValue[] =
     candidateProfile?.workReferences.map((reference) => ({
       jobTitle: reference.jobTitle,
@@ -118,7 +128,7 @@ export default async function ProfilePage() {
     ? Math.min(candidateProfile.onboardingStep, TOTAL_BUILT_STEPS)
     : 1;
 
-  const isSubmitted = candidateProfile?.step3CompletedAt != null;
+  const isSubmitted = candidateProfile?.step4CompletedAt != null;
   const editingUnlockedByAdmin = candidateProfile?.editingUnlockedByAdmin ?? false;
 
   return (
@@ -135,6 +145,7 @@ export default async function ProfilePage() {
         step2InitialValues={step2InitialValues}
         initialWorkReferences={initialWorkReferences}
         step3InitialValues={step3InitialValues}
+        step4InitialValues={step4InitialValues}
       />
     </main>
   );

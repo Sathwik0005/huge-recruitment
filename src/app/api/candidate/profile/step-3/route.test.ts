@@ -90,24 +90,24 @@ describe("POST /api/candidate/profile/step-3", () => {
     expect(args.create).not.toHaveProperty("onboardingStep");
   });
 
-  it("blocks a valid submit when the profile has no avatar, but still persists the fields", async () => {
+  it("advances onboardingStep and sets step3CompletedAt on submit without any avatar gate (no avatar set)", async () => {
     mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: null } as never);
-    const response = await POST(request(validPassportSubmit));
-    expect(response.status).toBe(400);
-    const body = await response.json();
-    expect(body.field).toBe("avatar");
-    expect(mockUpsert).toHaveBeenCalledTimes(1);
-    expect(mockUpdate).not.toHaveBeenCalled();
-  });
-
-  it("advances onboardingStep and sets step3CompletedAt when the avatar is already set", async () => {
-    mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: "candidates/user-1/avatar/x.png" } as never);
     const response = await POST(request(validPassportSubmit));
     expect(response.status).toBe(200);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
     const args = mockUpdate.mock.calls[0][0];
     expect(args.data).toMatchObject({ onboardingStep: 3 });
     expect(args.data.step3CompletedAt).toBeInstanceOf(Date);
+  });
+
+  it("never sets step4CompletedAt or clears editingUnlockedByAdmin, even when the profile already has an avatar", async () => {
+    mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: "candidates/user-1/avatar/x.png" } as never);
+    const response = await POST(request(validPassportSubmit));
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    const args = mockUpdate.mock.calls[0][0];
+    expect(args.data).not.toHaveProperty("step4CompletedAt");
+    expect(args.data).not.toHaveProperty("editingUnlockedByAdmin");
   });
 
   it("succeeds end-to-end for the ID card branch", async () => {

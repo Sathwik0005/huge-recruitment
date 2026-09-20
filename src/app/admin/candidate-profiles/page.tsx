@@ -64,7 +64,7 @@ export default async function AdminCandidateProfilesPage({
       lastName: user.lastName,
       email: user.email,
       onboardingStep: user.candidateProfile!.onboardingStep,
-      step3CompletedAt: user.candidateProfile!.step3CompletedAt,
+      step4CompletedAt: user.candidateProfile!.step4CompletedAt,
       editingUnlockedByAdmin: user.candidateProfile!.editingUnlockedByAdmin,
     }));
 
@@ -82,10 +82,10 @@ export default async function AdminCandidateProfilesPage({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <DashboardMetricCard label="Profiles Started" value={funnel.started} icon="badge" />
-        <DashboardMetricCard label="Profiles Submitted" value={funnel.step3Completed} icon="task_alt" />
+        <DashboardMetricCard label="Profiles Submitted" value={funnel.step4Completed} icon="task_alt" />
         <DashboardMetricCard
           label="Completion Rate"
-          value={funnel.started === 0 ? "—" : `${Math.round((funnel.step3Completed / funnel.started) * 100)}%`}
+          value={funnel.started === 0 ? "—" : `${Math.round((funnel.step4Completed / funnel.started) * 100)}%`}
           icon="trending_up"
         />
       </div>

@@ -28,10 +28,10 @@ export async function getAdminNotifications(): Promise<{ items: AdminNotificatio
       select: { id: true, fullName: true, createdAt: true, job: { select: { title: true } } },
     }),
     prisma.candidateProfile.findMany({
-      where: { step3CompletedAt: { gte: since } },
-      orderBy: { step3CompletedAt: "desc" },
+      where: { step4CompletedAt: { gte: since } },
+      orderBy: { step4CompletedAt: "desc" },
       take: MAX_ITEMS,
-      select: { userId: true, step3CompletedAt: true, user: { select: { firstName: true, lastName: true } } },
+      select: { userId: true, step4CompletedAt: true, user: { select: { firstName: true, lastName: true } } },
     }),
   ]);
 
@@ -46,7 +46,7 @@ export async function getAdminNotifications(): Promise<{ items: AdminNotificatio
       id: `profile-${profile.userId}`,
       message: `${profile.user.firstName} ${profile.user.lastName} submitted their candidate profile`,
       href: `/admin/candidate-profiles/${profile.userId}`,
-      createdAt: profile.step3CompletedAt!,
+      createdAt: profile.step4CompletedAt!,
     })),
   ]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

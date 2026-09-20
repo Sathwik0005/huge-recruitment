@@ -12,6 +12,7 @@ type RateLimitKind =
   | "candidateAvatarUpload"
   | "candidateProfileStep3Save"
   | "candidateProfileStep3Document"
+  | "candidateProfileStep4Save"
   | "postcodeLookup";
 
 let ratelimiters: Record<RateLimitKind, Ratelimit> | null = null;
@@ -69,6 +70,11 @@ function getRatelimiters() {
       redis,
       limiter: Ratelimit.slidingWindow(10, "10 m"),
       prefix: "ratelimit:candidate-profile-step3-document",
+    }),
+    candidateProfileStep4Save: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, "10 m"),
+      prefix: "ratelimit:candidate-profile-step4-save",
     }),
     postcodeLookup: new Ratelimit({
       redis,

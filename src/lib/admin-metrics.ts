@@ -209,18 +209,20 @@ export type OnboardingFunnel = {
   step1Completed: number;
   step2Completed: number;
   step3Completed: number;
+  step4Completed: number;
 };
 
 /** Profile row exists once step 1 is first saved (see `/api/candidate/profile/step-1`), so `started` is just a row count. */
 export async function getCandidateOnboardingFunnel(): Promise<OnboardingFunnel> {
-  const [started, step1Completed, step2Completed, step3Completed] = await Promise.all([
+  const [started, step1Completed, step2Completed, step3Completed, step4Completed] = await Promise.all([
     prisma.candidateProfile.count(),
     prisma.candidateProfile.count({ where: { step1CompletedAt: { not: null } } }),
     prisma.candidateProfile.count({ where: { step2CompletedAt: { not: null } } }),
     prisma.candidateProfile.count({ where: { step3CompletedAt: { not: null } } }),
+    prisma.candidateProfile.count({ where: { step4CompletedAt: { not: null } } }),
   ]);
 
-  return { started, step1Completed, step2Completed, step3Completed };
+  return { started, step1Completed, step2Completed, step3Completed, step4Completed };
 }
 
 export type SectorInterestCount = { sector: SectorName; label: string; count: number };

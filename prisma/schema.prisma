@@ -23,15 +23,15 @@ enum UserStatus {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  firebaseUid  String     @unique
-  firstName    String
-  lastName     String
-  email        String     @unique
-  role         Role       @default(USER)
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  firebaseUid String     @unique
+  firstName   String
+  lastName    String
+  email       String     @unique
+  role        Role       @default(USER)
+  status      UserStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   verificationEmailSentAt DateTime?
   welcomeEmailSentAt      DateTime?
@@ -119,9 +119,9 @@ model Client {
 }
 
 model Job {
-  id       String @id @default(cuid())
-  title    String
-  slug     String @unique
+  id    String @id @default(cuid())
+  title String
+  slug  String @unique
 
   sectorId       String
   sector         Sector         @relation(fields: [sectorId], references: [id], onDelete: Restrict)
@@ -133,24 +133,24 @@ model Job {
   countyOrRegion String?
   postcode       String?
 
-  payType                   PayType
-  currency                  String  @default("GBP")
-  additionalPayInformation  String?
+  payType                  PayType
+  currency                 String  @default("GBP")
+  additionalPayInformation String?
 
   referenceCode String? @unique
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
-  shortDescription       String?
-  startDate              DateTime?
-  closingDate            DateTime?
-  vacancyCount           Int?
-  hoursPerWeek           Decimal?
-  shiftSummary           String?
-  additionalInformation  String?
-  showPostedDate         Boolean   @default(true)
-  featured               Boolean   @default(false)
+  shortDescription      String?
+  startDate             DateTime?
+  closingDate           DateTime?
+  vacancyCount          Int?
+  hoursPerWeek          Decimal?
+  shiftSummary          String?
+  additionalInformation String?
+  showPostedDate        Boolean   @default(true)
+  featured              Boolean   @default(false)
 
   publishedAt DateTime?
   closedAt    DateTime?
@@ -381,9 +381,15 @@ model CandidateProfile {
 
   workReferences CandidateWorkReference[]
 
+  step4CompletedAt DateTime?
+
+  // Step 4 — Employee Declaration
+  declarationFullName   String?
+  declarationAcceptedAt DateTime?
+
   // Set by an admin after final submission to temporarily re-open every
   // field for editing; the candidate's own UI clears it back to false the
-  // next time they save step 3 ("Save & Submit"), matching a fresh submission.
+  // next time they save step 4 ("Save & Submit"), matching a fresh submission.
   editingUnlockedByAdmin Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -402,7 +408,7 @@ model CandidateWorkReference {
   companyAddress String?
   startDate      DateTime
   endDate        DateTime?
-  isCurrentJob   Boolean  @default(false)
+  isCurrentJob   Boolean   @default(false)
   managerName    String?
   managerMobile  String?
   managerEmail   String?

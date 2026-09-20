@@ -5,7 +5,8 @@ export function OnboardingFunnelChart({ funnel }: { funnel: OnboardingFunnel }) 
     { label: "Started", count: funnel.started },
     { label: "Step 1 Done", count: funnel.step1Completed },
     { label: "Step 2 Done", count: funnel.step2Completed },
-    { label: "Submitted", count: funnel.step3Completed },
+    { label: "Step 3 Done", count: funnel.step3Completed },
+    { label: "Submitted", count: funnel.step4Completed },
   ];
   const max = Math.max(1, funnel.started);
 
