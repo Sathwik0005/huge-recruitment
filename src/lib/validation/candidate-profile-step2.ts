@@ -64,7 +64,7 @@ const workReferenceBaseSchema = z.object({
     .refine((value) => value === undefined || z.string().email().safeParse(value).success, "Please enter a valid email."),
 });
 
-const workReferenceSchema = workReferenceBaseSchema.superRefine((value, ctx) => {
+export const workReferenceSchema = workReferenceBaseSchema.superRefine((value, ctx) => {
   if (value.isCurrentJob) {
     if (value.endDate) {
       ctx.addIssue({ code: "custom", path: ["endDate"], message: "End date must be empty for your current role." });

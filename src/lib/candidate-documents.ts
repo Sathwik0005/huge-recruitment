@@ -1,13 +1,15 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { CANDIDATE_DOCUMENTS_PREFIX } from "@/lib/s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { CANDIDATE_DOCUMENTS_PREFIX, getS3Bucket, getS3Client } from "@/lib/s3";
 
 /**
  * S3 key helpers for candidate onboarding Step 3's right-to-work and bank
  * documents — the multi-slot sibling of `src/lib/candidate-avatar.ts`.
- * Unlike the avatar, these documents are never displayed inline, so there is
- * intentionally no `getSignedDocumentUrl` export here (a future admin review
- * screen may need one; out of scope for this spec).
+ * These documents are never displayed inline in the candidate's own UI, but
+ * the admin candidate-profile review screen needs to view them, so
+ * `getSignedDocumentUrl` mirrors `getSignedAvatarUrl` exactly.
  */
 
 export const DOCUMENT_SLOTS = ["rightToWorkFront", "rightToWorkBack", "bankStatement"] as const;
@@ -60,4 +62,15 @@ export function matchesDocumentMagicBytes(buffer: Buffer, contentType: string): 
     default:
       return false;
   }
+}
+
+const DOCUMENT_SIGNED_URL_TTL_SECONDS = 300;
+
+/** Requests a short-lived signed GET URL for a private-bucket Step 3 document object. */
+export async function getSignedDocumentUrl(key: string): Promise<string> {
+  const client = getS3Client();
+  const bucket = getS3Bucket();
+  return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
+    expiresIn: DOCUMENT_SIGNED_URL_TTL_SECONDS,
+  });
 }

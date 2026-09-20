@@ -46,7 +46,7 @@ const sortCodeSchema = z
   .transform((value) => value.replace(/-/g, ""))
   .refine((value) => /^\d{6}$/.test(value), "Sort code must be exactly 6 digits.");
 
-const candidateProfileStep3BaseShape = {
+export const candidateProfileStep3BaseShape = {
   rightToWorkDocumentType: z.enum(rightToWorkDocumentTypeValues).optional(),
   brpSubtype: z.enum(brpSubtypeValues).optional(),
   visaExpiryDate: optionalFullDateSchema,
