@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EditingUnlockToggle } from "./EditingUnlockToggle";
 
 type CandidateProfileRow = {
@@ -35,15 +36,16 @@ export function CandidateProfileTable({ rows }: { rows: CandidateProfileRow[] })
             <th className="px-4 py-3">Onboarding Status</th>
             <th className="px-4 py-3">Submitted</th>
             <th className="px-4 py-3">Editing</th>
+            <th className="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-outline-variant">
           {rows.map((row) => (
             <tr key={row.userId} className="hover:bg-surface-container-lowest">
               <td className="px-4 py-3">
-                <p className="font-bold text-on-surface">
+                <Link href={`/admin/candidate-profiles/${row.userId}`} className="font-bold text-on-surface hover:underline">
                   {row.firstName} {row.lastName}
-                </p>
+                </Link>
                 <p className="text-label-sm text-on-surface-variant">{row.email}</p>
               </td>
               <td className="px-4 py-3">{statusLabel(row)}</td>
@@ -56,6 +58,14 @@ export function CandidateProfileTable({ rows }: { rows: CandidateProfileRow[] })
                 ) : (
                   <span className="text-label-sm text-on-surface-variant">Not submitted yet</span>
                 )}
+              </td>
+              <td className="px-4 py-3 text-right">
+                <Link
+                  href={`/admin/candidate-profiles/${row.userId}`}
+                  className="h-9 px-3 rounded-lg border border-primary text-primary font-bold text-label-sm hover:bg-primary/10 transition-colors inline-flex items-center"
+                >
+                  View profile
+                </Link>
               </td>
             </tr>
           ))}
