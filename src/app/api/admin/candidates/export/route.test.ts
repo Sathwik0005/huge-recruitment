@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import ExcelJS from "exceljs";
 
 vi.mock("@/lib/require-admin-session", () => ({
   requireAdminSession: vi.fn(),
@@ -40,6 +41,19 @@ function makeRequest(query = "") {
   return new Request(`http://localhost/api/admin/candidates/export${query}`);
 }
 
+/** Parses the response's xlsx buffer back into rows of cell values (row 1 = header). */
+async function readSheetRows(response: Response): Promise<unknown[][]> {
+  const buffer = await response.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const sheet = workbook.getWorksheet("Candidates")!;
+  const rows: unknown[][] = [];
+  sheet.eachRow((row) => {
+    rows.push(row.values as unknown[]);
+  });
+  return rows;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -65,15 +79,17 @@ describe("GET /api/admin/candidates/export", () => {
     expect(mockFindMany).not.toHaveBeenCalled();
   });
 
-  it("streams a CSV with the correct headers for an admin caller", async () => {
+  it("streams an xlsx workbook with the correct headers for an admin caller", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
     mockFindMany.mockResolvedValue([makeCandidate()] as never);
 
     const response = await GET(makeRequest());
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toContain("text/csv");
-    expect(response.headers.get("Content-Disposition")).toMatch(/attachment; filename="candidates-.+\.csv"/);
+    expect(response.headers.get("Content-Type")).toBe(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(response.headers.get("Content-Disposition")).toMatch(/attachment; filename="candidates-.+\.xlsx"/);
   });
 
   it("includes a header row and one row per candidate", async () => {
@@ -81,13 +97,21 @@ describe("GET /api/admin/candidates/export", () => {
     mockFindMany.mockResolvedValue([makeCandidate(), makeCandidate({ id: "app-2", fullName: "John Smith" })] as never);
 
     const response = await GET(makeRequest());
-    const csv = await response.text();
-    const lines = csv.split("\r\n");
+    const rows = await readSheetRows(response);
 
-    expect(lines[0]).toBe("Name,Email,Phone,Location,Job,Verification,Status,Applied Date");
-    expect(lines).toHaveLength(3);
-    expect(lines[1]).toContain("Jane Doe");
-    expect(lines[2]).toContain("John Smith");
+    expect(rows).toHaveLength(3);
+    expect(rows[0].slice(1)).toEqual([
+      "Name",
+      "Email",
+      "Phone",
+      "Location",
+      "Job",
+      "Verification",
+      "Status",
+      "Applied Date",
+    ]);
+    expect(rows[1]).toContain("Jane Doe");
+    expect(rows[2]).toContain("John Smith");
   });
 
   it("includes the derived verification bucket alongside the raw status", async () => {
@@ -95,10 +119,10 @@ describe("GET /api/admin/candidates/export", () => {
     mockFindMany.mockResolvedValue([makeCandidate({ status: ApplicationStatus.HIRED })] as never);
 
     const response = await GET(makeRequest());
-    const csv = await response.text();
+    const rows = await readSheetRows(response);
 
-    expect(csv).toContain("verified");
-    expect(csv).toContain("HIRED");
+    expect(rows[1]).toContain("verified");
+    expect(rows[1]).toContain(ApplicationStatus.HIRED);
   });
 
   it.each([
@@ -111,50 +135,19 @@ describe("GET /api/admin/candidates/export", () => {
     mockFindMany.mockResolvedValue([makeCandidate({ fullName: raw })] as never);
 
     const response = await GET(makeRequest());
-    const csv = await response.text();
+    const rows = await readSheetRows(response);
 
-    expect(csv).toContain(expected);
+    expect(rows[1]).toContain(expected);
   });
 
-  it("quote-wraps and doubles internal quotes for a cell containing a comma", async () => {
-    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ location: "Foston, Derbyshire" })] as never);
-
-    const response = await GET(makeRequest());
-    const csv = await response.text();
-
-    expect(csv).toContain('"Foston, Derbyshire"');
-  });
-
-  it("quote-wraps and doubles internal quotes for a cell containing a double quote", async () => {
-    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ fullName: 'Jane "JJ" Doe' })] as never);
-
-    const response = await GET(makeRequest());
-    const csv = await response.text();
-
-    expect(csv).toContain('"Jane ""JJ"" Doe"');
-  });
-
-  it("quote-wraps a cell containing a newline", async () => {
-    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockFindMany.mockResolvedValue([makeCandidate({ location: "Line1\nLine2" })] as never);
-
-    const response = await GET(makeRequest());
-    const csv = await response.text();
-
-    expect(csv).toContain('"Line1\nLine2"');
-  });
-
-  it("does not quote-wrap or prefix an ordinary cell", async () => {
+  it("does not prefix an ordinary cell", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
     mockFindMany.mockResolvedValue([makeCandidate({ fullName: "Jane Doe" })] as never);
 
     const response = await GET(makeRequest());
-    const csv = await response.text();
-    const dataLine = csv.split("\r\n")[1];
+    const rows = await readSheetRows(response);
 
-    expect(dataLine.startsWith("Jane Doe,")).toBe(true);
+    expect(rows[1]).toContain("Jane Doe");
   });
 
   it("caps the exported rows at 1000 via the Prisma query", async () => {

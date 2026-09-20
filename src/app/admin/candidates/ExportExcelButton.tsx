@@ -1,4 +1,4 @@
-export function ExportCsvButton({ queryString }: { queryString: string }) {
+export function ExportExcelButton({ queryString }: { queryString: string }) {
   const href = queryString ? `/api/admin/candidates/export?${queryString}` : "/api/admin/candidates/export";
   return (
     <a
@@ -8,7 +8,7 @@ export function ExportCsvButton({ queryString }: { queryString: string }) {
       <span className="material-symbols-outlined text-sm" aria-hidden="true">
         download
       </span>
-      Export CSV
+      Export Excel
     </a>
   );
 }

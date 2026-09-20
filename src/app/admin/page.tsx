@@ -10,6 +10,7 @@ import {
 import { DashboardMetricCard } from "./DashboardMetricCard";
 import { StatusDistributionChart } from "./StatusDistributionChart";
 import { RecentApplicationsList } from "./RecentApplicationsList";
+import { ClickableRow } from "./ClickableRow";
 import { JobPagination } from "@/app/jobs/JobPagination";
 
 const PAGE_SIZE = 10;
@@ -93,14 +94,18 @@ export default async function AdminDashboardPage({
             </thead>
             <tbody className="divide-y divide-outline-variant/50">
               {tableRows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-container transition-colors">
+                <ClickableRow
+                  key={row.id}
+                  href={`/admin/candidates/${row.id}`}
+                  className="hover:bg-surface-container transition-colors"
+                >
                   <td className="px-4 py-2 text-on-surface font-medium">{row.fullName}</td>
                   <td className="px-4 py-2 text-on-surface-variant">{row.job.title}</td>
                   <td className="px-4 py-2 text-on-surface-variant">{row.status}</td>
                   <td className="px-4 py-2 text-right text-on-surface-variant">
                     {row.createdAt.toLocaleDateString("en-GB")}
                   </td>
-                </tr>
+                </ClickableRow>
               ))}
             </tbody>
           </table>

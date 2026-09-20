@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { ApplicationStatus, JobStatus, SectorName } from "@/generated/prisma/enums";
+import { ApplicationStatus, JobStatus, SectorName, ReferralSource } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 
 export type CandidateVerification = "verified" | "pending" | "inactive";
@@ -202,6 +202,58 @@ export async function getTopPerformingRoles(limit = 5): Promise<TopPerformingRol
         ? Math.round((job.closedAt.getTime() - job.publishedAt.getTime()) / 86_400_000)
         : null,
   }));
+}
+
+export type OnboardingFunnel = {
+  started: number;
+  step1Completed: number;
+  step2Completed: number;
+  step3Completed: number;
+};
+
+/** Profile row exists once step 1 is first saved (see `/api/candidate/profile/step-1`), so `started` is just a row count. */
+export async function getCandidateOnboardingFunnel(): Promise<OnboardingFunnel> {
+  const [started, step1Completed, step2Completed, step3Completed] = await Promise.all([
+    prisma.candidateProfile.count(),
+    prisma.candidateProfile.count({ where: { step1CompletedAt: { not: null } } }),
+    prisma.candidateProfile.count({ where: { step2CompletedAt: { not: null } } }),
+    prisma.candidateProfile.count({ where: { step3CompletedAt: { not: null } } }),
+  ]);
+
+  return { started, step1Completed, step2Completed, step3Completed };
+}
+
+export type SectorInterestCount = { sector: SectorName; label: string; count: number };
+
+/** `interestedSectors` is a Postgres array column — Prisma can't `groupBy` on it, so counts are aggregated in JS. */
+export async function getCandidateInterestedSectors(): Promise<SectorInterestCount[]> {
+  const [sectors, profiles] = await Promise.all([
+    prisma.sector.findMany({ orderBy: { label: "asc" }, select: { name: true, label: true } }),
+    prisma.candidateProfile.findMany({ select: { interestedSectors: true } }),
+  ]);
+
+  const counts = new Map<SectorName, number>();
+  for (const profile of profiles) {
+    for (const sector of profile.interestedSectors) {
+      counts.set(sector, (counts.get(sector) ?? 0) + 1);
+    }
+  }
+
+  return sectors.map((sector) => ({ sector: sector.name, label: sector.label, count: counts.get(sector.name) ?? 0 }));
+}
+
+export type ReferralSourceCount = { source: ReferralSource; count: number };
+
+export async function getCandidateReferralSourceBreakdown(): Promise<ReferralSourceCount[]> {
+  const groups = await prisma.candidateProfile.groupBy({
+    by: ["referralSource"],
+    _count: true,
+    where: { referralSource: { not: null } },
+  });
+
+  return groups
+    .map((group) => ({ source: group.referralSource as ReferralSource, count: group._count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 export type CandidateFilters = {

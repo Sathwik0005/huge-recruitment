@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { ApplicationStatus } from "@/generated/prisma/enums";
 import { deriveCandidateVerification, type CandidateVerification } from "@/lib/admin-metrics";
 import { ApplicationStatusSelect } from "./ApplicationStatusSelect";
+import { ClickableRow } from "../ClickableRow";
 
 type CandidateRow = {
   id: string;
@@ -51,11 +51,13 @@ export function AdminCandidatesTable({ candidates }: { candidates: CandidateRow[
           {candidates.map((candidate) => {
             const verification = deriveCandidateVerification(candidate.status);
             return (
-              <tr key={candidate.id} className="hover:bg-surface-container-lowest">
+              <ClickableRow
+                key={candidate.id}
+                href={`/admin/candidates/${candidate.id}`}
+                className="hover:bg-surface-container-lowest"
+              >
                 <td className="px-4 py-3">
-                  <Link href={`/admin/candidates/${candidate.id}`} className="font-bold text-primary hover:underline">
-                    {candidate.fullName}
-                  </Link>
+                  <p className="font-bold text-primary">{candidate.fullName}</p>
                   <p className="text-label-sm text-on-surface-variant">{candidate.email}</p>
                 </td>
                 <td className="px-4 py-3">{candidate.job.title}</td>
@@ -70,7 +72,7 @@ export function AdminCandidatesTable({ candidates }: { candidates: CandidateRow[
                 <td className="px-4 py-3">
                   <ApplicationStatusSelect applicationId={candidate.id} status={candidate.status} />
                 </td>
-              </tr>
+              </ClickableRow>
             );
           })}
         </tbody>

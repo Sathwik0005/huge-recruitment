@@ -80,6 +80,11 @@ export function WorkReferencesManager({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   const [dirty, setDirty] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  function toggleExpanded(index: number) {
+    setExpandedIndex((prev) => (prev === index ? null : index));
+  }
 
   function openNew() {
     setDraft(emptyDraft);
@@ -162,27 +167,58 @@ export function WorkReferencesManager({
       <div className="space-y-3">
         {references.map((reference, index) =>
           editingIndex === index ? null : (
-            <div key={reference.id ?? index} className="rounded-lg border border-outline-variant p-4 flex justify-between items-start">
-              <div>
-                <p className="font-bold text-on-surface">
-                  {reference.jobTitle} — {reference.companyName}
-                </p>
-                <p className="text-label-sm text-on-surface-variant">
-                  {toDateInputValue(reference.startDate)} to {reference.isCurrentJob ? "Present" : toDateInputValue(reference.endDate)}
-                </p>
+            <div key={reference.id ?? index} className="rounded-lg border border-outline-variant p-4">
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <p className="font-bold text-on-surface">
+                    {reference.jobTitle} — {reference.companyName}
+                  </p>
+                  <p className="text-label-sm text-on-surface-variant">
+                    {toDateInputValue(reference.startDate)} to{" "}
+                    {reference.isCurrentJob ? "Present" : toDateInputValue(reference.endDate)}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(index)}
+                    className="text-label-sm text-primary font-bold hover:underline"
+                  >
+                    {expandedIndex === index ? "Close" : "View"}
+                  </button>
+                  <button type="button" onClick={() => openEdit(index)} className="text-label-sm text-primary font-bold hover:underline">
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteReference(index)}
+                    className="text-label-sm text-error font-bold hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button type="button" onClick={() => openEdit(index)} className="text-label-sm text-primary font-bold hover:underline">
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deleteReference(index)}
-                  className="text-label-sm text-error font-bold hover:underline"
-                >
-                  Delete
-                </button>
-              </div>
+
+              {expandedIndex === index && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-outline-variant">
+                  <div>
+                    <p className={labelClass}>Company Address</p>
+                    <p className="text-body-md text-on-surface">{reference.companyAddress || "—"}</p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Manager Name</p>
+                    <p className="text-body-md text-on-surface">{reference.managerName || "—"}</p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Manager Mobile</p>
+                    <p className="text-body-md text-on-surface">{reference.managerMobile || "—"}</p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Manager Email</p>
+                    <p className="text-body-md text-on-surface">{reference.managerEmail || "—"}</p>
+                  </div>
+                </div>
+              )}
             </div>
           ),
         )}

@@ -1,5 +1,4 @@
 import {
-  getAvgTimeToFillDays,
   getTotalPlacementsYtd,
   getTotalActiveEmployers,
   getApplicationsBySector,
@@ -14,9 +13,8 @@ import { TopEmployersTable } from "./TopEmployersTable";
 import { TopRolesTable } from "./TopRolesTable";
 
 export default async function AdminAnalyticsPage() {
-  const [avgTimeToFillDays, placementsYtd, activeEmployers, applicationsBySector, statusDistribution, topEmployers, topRoles] =
+  const [placementsYtd, activeEmployers, applicationsBySector, statusDistribution, topEmployers, topRoles] =
     await Promise.all([
-      getAvgTimeToFillDays(),
       getTotalPlacementsYtd(),
       getTotalActiveEmployers(),
       getApplicationsBySector(),
@@ -34,16 +32,11 @@ export default async function AdminAnalyticsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DashboardMetricCard
           label="Total Active Employers"
           value={activeEmployers}
           icon="business"
-        />
-        <DashboardMetricCard
-          label="Avg. Time to Fill"
-          value={avgTimeToFillDays !== null ? `${avgTimeToFillDays} Days` : "—"}
-          icon="timer"
         />
         <DashboardMetricCard label="Total Placements YTD" value={placementsYtd} icon="how_to_reg" />
       </div>

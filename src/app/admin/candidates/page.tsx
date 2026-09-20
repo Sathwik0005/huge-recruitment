@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { buildCandidateWhere, type CandidateVerification } from "@/lib/admin-metrics";
 import { AdminCandidatesTable } from "./AdminCandidatesTable";
 import { CandidateFilterBar } from "./CandidateFilterBar";
-import { ExportCsvButton } from "./ExportCsvButton";
+import { ExportExcelButton } from "./ExportExcelButton";
 import { JobPagination } from "@/app/jobs/JobPagination";
 
 const VERIFICATION_VALUES: CandidateVerification[] = ["verified", "pending", "inactive"];
@@ -49,7 +49,7 @@ export default async function AdminCandidatesPage({
           <h1 className="text-headline-lg text-on-surface">Candidates</h1>
           <p className="text-body-md text-on-surface-variant mt-1">Manage and review job applicants.</p>
         </div>
-        <ExportCsvButton queryString={exportQuery.toString()} />
+        <ExportExcelButton queryString={exportQuery.toString()} />
       </div>
 
       <CandidateFilterBar sectors={sectors} />

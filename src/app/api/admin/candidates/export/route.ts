@@ -1,3 +1,4 @@
+import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin-session";
@@ -6,16 +7,9 @@ import { buildCandidateWhere, deriveCandidateVerification, type CandidateVerific
 const VERIFICATION_VALUES: CandidateVerification[] = ["verified", "pending", "inactive"];
 const MAX_ROWS = 1000;
 
-/** Escapes a cell for CSV, guarding against formula injection in spreadsheet apps. */
-function escapeCsvCell(value: string): string {
-  let cell = value;
-  if (/^[=+\-@]/.test(cell)) cell = `'${cell}`;
-  if (/[",\n]/.test(cell)) cell = `"${cell.replace(/"/g, '""')}"`;
-  return cell;
-}
-
-function toCsvRow(cells: string[]): string {
-  return cells.map(escapeCsvCell).join(",");
+/** Guards against formula injection if a cell is ever re-opened as CSV/plain text downstream. */
+function guardFormulaInjection(value: string): string {
+  return /^[=+\-@]/.test(value) ? `'${value}` : value;
 }
 
 export async function GET(request: Request) {
@@ -41,27 +35,41 @@ export async function GET(request: Request) {
     take: MAX_ROWS,
   });
 
-  const header = toCsvRow(["Name", "Email", "Phone", "Location", "Job", "Verification", "Status", "Applied Date"]);
-  const rows = candidates.map((candidate) =>
-    toCsvRow([
-      candidate.fullName,
-      candidate.email,
-      candidate.phone,
-      candidate.location,
-      candidate.job.title,
-      deriveCandidateVerification(candidate.status),
-      candidate.status,
-      candidate.createdAt.toISOString().slice(0, 10),
-    ])
-  );
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Candidates");
 
-  const csv = [header, ...rows].join("\r\n");
-  const filename = `candidates-${new Date().toISOString().slice(0, 10)}.csv`;
+  sheet.columns = [
+    { header: "Name", key: "name", width: 24 },
+    { header: "Email", key: "email", width: 28 },
+    { header: "Phone", key: "phone", width: 16 },
+    { header: "Location", key: "location", width: 20 },
+    { header: "Job", key: "job", width: 24 },
+    { header: "Verification", key: "verification", width: 14 },
+    { header: "Status", key: "status", width: 14 },
+    { header: "Applied Date", key: "appliedDate", width: 14 },
+  ];
+  sheet.getRow(1).font = { bold: true };
 
-  return new NextResponse(csv, {
+  for (const candidate of candidates) {
+    sheet.addRow({
+      name: guardFormulaInjection(candidate.fullName),
+      email: guardFormulaInjection(candidate.email),
+      phone: guardFormulaInjection(candidate.phone),
+      location: guardFormulaInjection(candidate.location),
+      job: guardFormulaInjection(candidate.job.title),
+      verification: deriveCandidateVerification(candidate.status),
+      status: candidate.status,
+      appliedDate: candidate.createdAt.toISOString().slice(0, 10),
+    });
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const filename = `candidates-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  return new NextResponse(Buffer.from(buffer), {
     status: 200,
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
