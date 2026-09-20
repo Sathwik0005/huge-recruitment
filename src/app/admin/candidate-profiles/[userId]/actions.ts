@@ -12,6 +12,7 @@ import {
 } from "@/lib/validation/admin-candidate-profile";
 import { getSignedDocumentUrl } from "@/lib/candidate-documents";
 import type { DocumentSlot } from "@/lib/candidate-documents";
+import { deleteS3Object } from "@/lib/s3";
 
 type ActionResult<T = undefined> = T extends undefined
   ? { success: true } | { success: false; error: string }
@@ -181,11 +182,10 @@ export async function getDocumentViewUrl(
 }
 
 /**
- * Clears the candidate's avatar. Database-only — does not delete the
- * underlying S3 object (the S3 role has no `s3:DeleteObject` grant today;
- * see `.claude/specs/08-admin-candidate-profile-crud.md`), matching the
- * existing avatar-replace flow, which already leaves superseded objects
- * orphaned in S3.
+ * Deletes the candidate's avatar: removes the S3 object first (the key is
+ * read from the candidate's own DB row, never from client input), and only
+ * clears the DB reference once that succeeds. If the S3 delete fails, the DB
+ * reference is left in place so the deletion can be retried.
  */
 export async function clearCandidateAvatar(userId: string): Promise<ActionResult> {
   const admin = await checkAdmin();
@@ -195,6 +195,21 @@ export async function clearCandidateAvatar(userId: string): Promise<ActionResult
   if (!parsedUserId.success) return { success: false, error: "Invalid candidate." };
 
   try {
+    const profile = await prisma.candidateProfile.findUnique({
+      where: { userId: parsedUserId.data },
+      select: { avatarS3Key: true },
+    });
+    if (!profile) return { success: false, error: "This candidate has no profile." };
+
+    if (profile.avatarS3Key) {
+      try {
+        await deleteS3Object(profile.avatarS3Key);
+      } catch (error) {
+        console.error("Failed to delete candidate avatar from S3", error);
+        return { success: false, error: "Something went wrong. Please try again." };
+      }
+    }
+
     await prisma.candidateProfile.update({ where: { userId: parsedUserId.data }, data: { avatarS3Key: null } });
     revalidatePath(detailPath(parsedUserId.data));
     return { success: true };
@@ -204,7 +219,11 @@ export async function clearCandidateAvatar(userId: string): Promise<ActionResult
   }
 }
 
-/** Clears one Step 3 document slot's key + filename columns. Database-only, see `clearCandidateAvatar`. */
+/**
+ * Deletes one Step 3 document slot: removes the S3 object first (key read
+ * from the candidate's own DB row, never from client input), and only clears
+ * the DB reference once that succeeds. See `clearCandidateAvatar`.
+ */
 export async function clearCandidateDocument(userId: string, slot: DocumentSlot): Promise<ActionResult> {
   const admin = await checkAdmin();
   if (!admin.ok) return { success: false, error: admin.error };
@@ -220,6 +239,27 @@ export async function clearCandidateDocument(userId: string, slot: DocumentSlot)
         : { bankStatementS3Key: null, bankStatementOriginalFilename: null };
 
   try {
+    const profile = await prisma.candidateProfile.findUnique({
+      where: { userId: parsedUserId.data },
+      select: { rightToWorkDocFrontS3Key: true, rightToWorkDocBackS3Key: true, bankStatementS3Key: true },
+    });
+    if (!profile) return { success: false, error: "This candidate has no profile." };
+
+    const key =
+      slot === "rightToWorkFront"
+        ? profile.rightToWorkDocFrontS3Key
+        : slot === "rightToWorkBack"
+          ? profile.rightToWorkDocBackS3Key
+          : profile.bankStatementS3Key;
+    if (key) {
+      try {
+        await deleteS3Object(key);
+      } catch (error) {
+        console.error("Failed to delete candidate document from S3", error);
+        return { success: false, error: "Something went wrong. Please try again." };
+      }
+    }
+
     await prisma.candidateProfile.update({ where: { userId: parsedUserId.data }, data });
     revalidatePath(detailPath(parsedUserId.data));
     return { success: true };

@@ -1,5 +1,5 @@
 import "server-only";
-import { S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
 import { awsCredentialsProvider } from "@vercel/functions/oidc";
 
 /**
@@ -55,4 +55,22 @@ export function getS3Client(): S3Client {
     });
   }
   return s3Client;
+}
+
+/**
+ * Deletes an object from the candidate-documents bucket. S3's DeleteObject API
+ * returns success even when the key is already missing, so the `NoSuchKey`
+ * branch below is a defensive no-op rather than the primary "already deleted"
+ * path — it just guards against that behavior differing in edge cases. Any
+ * other failure (e.g. AccessDenied) is rethrown for the caller to handle.
+ */
+export async function deleteS3Object(key: string): Promise<void> {
+  const client = getS3Client();
+  const bucket = getS3Bucket();
+  try {
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  } catch (error) {
+    if (error instanceof S3ServiceException && error.name === "NoSuchKey") return;
+    throw error;
+  }
 }

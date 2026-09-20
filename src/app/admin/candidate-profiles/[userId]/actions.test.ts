@@ -26,10 +26,15 @@ vi.mock("@/lib/candidate-documents", () => ({
   getSignedDocumentUrl: vi.fn(),
 }));
 
+vi.mock("@/lib/s3", () => ({
+  deleteS3Object: vi.fn(),
+}));
+
 import { requireAdminSession } from "@/lib/require-admin-session";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSignedDocumentUrl } from "@/lib/candidate-documents";
+import { deleteS3Object } from "@/lib/s3";
 import {
   updateCandidateStep1,
   updateCandidateStep2,
@@ -48,6 +53,7 @@ const mockWorkRefDeleteMany = vi.mocked(prisma.candidateWorkReference.deleteMany
 const mockWorkRefCreateMany = vi.mocked(prisma.candidateWorkReference.createMany);
 const mockTransaction = vi.mocked(prisma.$transaction);
 const mockGetSignedDocumentUrl = vi.mocked(getSignedDocumentUrl);
+const mockDeleteS3Object = vi.mocked(deleteS3Object);
 
 const ADMIN_USER = { id: "admin-1", role: "ADMIN", status: "ACTIVE" };
 const USER_ID = "user-123";
@@ -412,22 +418,27 @@ describe("getDocumentViewUrl", () => {
 });
 
 describe("clearCandidateAvatar", () => {
-  it.each(NON_OK_STATUSES)("rejects when requireAdminSession status is %s, without touching Prisma", async (status) => {
+  it.each(NON_OK_STATUSES)("rejects when requireAdminSession status is %s, without touching Prisma or S3", async (status) => {
     mockRequireAdminSession.mockResolvedValue({ status } as never);
 
     const result = await clearCandidateAvatar(USER_ID);
 
     expect(result.success).toBe(false);
+    expect(mockProfileFindUnique).not.toHaveBeenCalled();
     expect(mockProfileUpdate).not.toHaveBeenCalled();
+    expect(mockDeleteS3Object).not.toHaveBeenCalled();
   });
 
-  it("nulls only avatarS3Key, scoped to the userId argument", async () => {
+  it("deletes the S3 object (key read from the DB row) then nulls avatarS3Key", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({ avatarS3Key: "candidates/user-123/avatar/abc.png" } as never);
+    mockDeleteS3Object.mockResolvedValue(undefined);
     mockProfileUpdate.mockResolvedValue({} as never);
 
     const result = await clearCandidateAvatar(USER_ID);
 
     expect(result.success).toBe(true);
+    expect(mockDeleteS3Object).toHaveBeenCalledWith("candidates/user-123/avatar/abc.png");
     expect(mockProfileUpdate).toHaveBeenCalledWith({
       where: { userId: USER_ID },
       data: { avatarS3Key: null },
@@ -435,22 +446,141 @@ describe("clearCandidateAvatar", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith(`/admin/candidate-profiles/${USER_ID}`);
   });
 
-  it("never issues any S3 delete call — database-only per the spec's decision 2/scope note", async () => {
+  it("skips the S3 call when avatarS3Key is already null, but still clears the DB row", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({ avatarS3Key: null } as never);
     mockProfileUpdate.mockResolvedValue({} as never);
 
-    await clearCandidateAvatar(USER_ID);
+    const result = await clearCandidateAvatar(USER_ID);
 
-    // No S3 client/module is mocked or imported into this action at all —
-    // asserting the Prisma call is the only side effect suffices; nothing in
-    // this test file wires up @/lib/s3 or DeleteObjectCommand.
-    expect(mockProfileUpdate).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(true);
+    expect(mockDeleteS3Object).not.toHaveBeenCalled();
+    expect(mockProfileUpdate).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+      data: { avatarS3Key: null },
+    });
+  });
+
+  it("does not clear the DB reference when the S3 delete fails", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({ avatarS3Key: "candidates/user-123/avatar/abc.png" } as never);
+    mockDeleteS3Object.mockRejectedValue(new Error("AccessDenied"));
+
+    const result = await clearCandidateAvatar(USER_ID);
+
+    expect(result.success).toBe(false);
+    expect(mockProfileUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns a failure when the candidate has no profile", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue(null);
+
+    const result = await clearCandidateAvatar(USER_ID);
+
+    expect(result.success).toBe(false);
+    expect(mockDeleteS3Object).not.toHaveBeenCalled();
+    expect(mockProfileUpdate).not.toHaveBeenCalled();
   });
 });
 
 describe("clearCandidateDocument", () => {
-  it.each(NON_OK_STATUSES)("rejects when requireAdminSession status is %s, without touching Prisma", async (status) => {
+  it.each(NON_OK_STATUSES)("rejects when requireAdminSession status is %s, without touching Prisma or S3", async (status) => {
     mockRequireAdminSession.mockResolvedValue({ status } as never);
+
+    const result = await clearCandidateDocument(USER_ID, "bankStatement");
+
+    expect(result.success).toBe(false);
+    expect(mockProfileFindUnique).not.toHaveBeenCalled();
+    expect(mockProfileUpdate).not.toHaveBeenCalled();
+    expect(mockDeleteS3Object).not.toHaveBeenCalled();
+  });
+
+  it("deletes the S3 object then nulls the bankStatement key + filename columns only", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({
+      rightToWorkDocFrontS3Key: null,
+      rightToWorkDocBackS3Key: null,
+      bankStatementS3Key: "candidates/user-123/step-3/bankStatement/abc.pdf",
+    } as never);
+    mockDeleteS3Object.mockResolvedValue(undefined);
+    mockProfileUpdate.mockResolvedValue({} as never);
+
+    const result = await clearCandidateDocument(USER_ID, "bankStatement");
+
+    expect(result.success).toBe(true);
+    expect(mockDeleteS3Object).toHaveBeenCalledWith("candidates/user-123/step-3/bankStatement/abc.pdf");
+    expect(mockProfileUpdate).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+      data: { bankStatementS3Key: null, bankStatementOriginalFilename: null },
+    });
+  });
+
+  it("deletes the S3 object then nulls the rightToWorkFront key + filename columns only", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({
+      rightToWorkDocFrontS3Key: "candidates/user-123/step-3/rightToWorkFront/abc.png",
+      rightToWorkDocBackS3Key: null,
+      bankStatementS3Key: null,
+    } as never);
+    mockDeleteS3Object.mockResolvedValue(undefined);
+    mockProfileUpdate.mockResolvedValue({} as never);
+
+    await clearCandidateDocument(USER_ID, "rightToWorkFront");
+
+    expect(mockDeleteS3Object).toHaveBeenCalledWith("candidates/user-123/step-3/rightToWorkFront/abc.png");
+    expect(mockProfileUpdate).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+      data: { rightToWorkDocFrontS3Key: null, rightToWorkDocFrontOriginalFilename: null },
+    });
+  });
+
+  it("deletes the S3 object then nulls the rightToWorkBack key + filename columns only", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({
+      rightToWorkDocFrontS3Key: null,
+      rightToWorkDocBackS3Key: "candidates/user-123/step-3/rightToWorkBack/abc.png",
+      bankStatementS3Key: null,
+    } as never);
+    mockDeleteS3Object.mockResolvedValue(undefined);
+    mockProfileUpdate.mockResolvedValue({} as never);
+
+    await clearCandidateDocument(USER_ID, "rightToWorkBack");
+
+    expect(mockDeleteS3Object).toHaveBeenCalledWith("candidates/user-123/step-3/rightToWorkBack/abc.png");
+    expect(mockProfileUpdate).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+      data: { rightToWorkDocBackS3Key: null, rightToWorkDocBackOriginalFilename: null },
+    });
+  });
+
+  it("skips the S3 call when the slot's key is already null, but still clears the DB row", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({
+      rightToWorkDocFrontS3Key: null,
+      rightToWorkDocBackS3Key: null,
+      bankStatementS3Key: null,
+    } as never);
+    mockProfileUpdate.mockResolvedValue({} as never);
+
+    const result = await clearCandidateDocument(USER_ID, "bankStatement");
+
+    expect(result.success).toBe(true);
+    expect(mockDeleteS3Object).not.toHaveBeenCalled();
+    expect(mockProfileUpdate).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+      data: { bankStatementS3Key: null, bankStatementOriginalFilename: null },
+    });
+  });
+
+  it("does not clear the DB reference when the S3 delete fails", async () => {
+    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
+    mockProfileFindUnique.mockResolvedValue({
+      rightToWorkDocFrontS3Key: null,
+      rightToWorkDocBackS3Key: null,
+      bankStatementS3Key: "candidates/user-123/step-3/bankStatement/abc.pdf",
+    } as never);
+    mockDeleteS3Object.mockRejectedValue(new Error("AccessDenied"));
 
     const result = await clearCandidateDocument(USER_ID, "bankStatement");
 
@@ -458,40 +588,14 @@ describe("clearCandidateDocument", () => {
     expect(mockProfileUpdate).not.toHaveBeenCalled();
   });
 
-  it("nulls the bankStatement key + filename columns only", async () => {
+  it("returns a failure when the candidate has no profile", async () => {
     mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockProfileUpdate.mockResolvedValue({} as never);
+    mockProfileFindUnique.mockResolvedValue(null);
 
     const result = await clearCandidateDocument(USER_ID, "bankStatement");
 
-    expect(result.success).toBe(true);
-    expect(mockProfileUpdate).toHaveBeenCalledWith({
-      where: { userId: USER_ID },
-      data: { bankStatementS3Key: null, bankStatementOriginalFilename: null },
-    });
-  });
-
-  it("nulls the rightToWorkFront key + filename columns only", async () => {
-    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockProfileUpdate.mockResolvedValue({} as never);
-
-    await clearCandidateDocument(USER_ID, "rightToWorkFront");
-
-    expect(mockProfileUpdate).toHaveBeenCalledWith({
-      where: { userId: USER_ID },
-      data: { rightToWorkDocFrontS3Key: null, rightToWorkDocFrontOriginalFilename: null },
-    });
-  });
-
-  it("nulls the rightToWorkBack key + filename columns only", async () => {
-    mockRequireAdminSession.mockResolvedValue({ status: "ok", user: ADMIN_USER } as never);
-    mockProfileUpdate.mockResolvedValue({} as never);
-
-    await clearCandidateDocument(USER_ID, "rightToWorkBack");
-
-    expect(mockProfileUpdate).toHaveBeenCalledWith({
-      where: { userId: USER_ID },
-      data: { rightToWorkDocBackS3Key: null, rightToWorkDocBackOriginalFilename: null },
-    });
+    expect(result.success).toBe(false);
+    expect(mockDeleteS3Object).not.toHaveBeenCalled();
+    expect(mockProfileUpdate).not.toHaveBeenCalled();
   });
 });
