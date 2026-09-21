@@ -72,7 +72,55 @@ describe("SignaturePad", () => {
 
     expect(onSaved).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledWith("/api/candidate/profile/step-4/signature", expect.objectContaining({ method: "POST" }));
-    expect(await screen.findByRole("button", { name: /signature saved/i })).toBeInTheDocument();
+    expect(await screen.findByText("Signature Saved")).toBeInTheDocument();
+  });
+
+  it("locks the canvas after a successful save so a stray touch doesn't add a stroke, until Edit is clicked", async () => {
+    stubCanvas();
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ s3Key: "candidates/u1/step-4/signature/x.png" }),
+    });
+    const user = userEvent.setup();
+    const { container } = render(<SignaturePad initialSignatureUrl={null} onSaved={vi.fn()} />);
+
+    const canvas = container.querySelector("canvas") as HTMLCanvasElement;
+    drawOnCanvas(canvas);
+    await user.click(screen.getByRole("button", { name: /save signature/i }));
+
+    expect(await screen.findByText("Signature Saved")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^clear$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /save signature/i })).not.toBeInTheDocument();
+
+    // Stray taps on the now-locked canvas must not restart drawing — beginPath
+    // stays at its single call from the original stroke above.
+    const strokeCtx = vi.mocked(HTMLCanvasElement.prototype.getContext).mock.results[0].value;
+    expect(strokeCtx.beginPath).toHaveBeenCalledTimes(1);
+    drawOnCanvas(canvas);
+    expect(strokeCtx.beginPath).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: /^edit$/i }));
+    expect(screen.getByRole("button", { name: /^clear$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /save signature/i })).toBeInTheDocument();
+    expect(screen.queryByText("Signature Saved")).not.toBeInTheDocument();
+  });
+
+  it("hides the Edit button while disabled, so a locked-and-submitted signature can't be reopened", async () => {
+    stubCanvas();
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ s3Key: "candidates/u1/step-4/signature/x.png" }),
+    });
+    const user = userEvent.setup();
+    const { container, rerender } = render(<SignaturePad initialSignatureUrl={null} onSaved={vi.fn()} />);
+
+    const canvas = container.querySelector("canvas") as HTMLCanvasElement;
+    drawOnCanvas(canvas);
+    await user.click(screen.getByRole("button", { name: /save signature/i }));
+    expect(await screen.findByText("Signature Saved")).toBeInTheDocument();
+
+    rerender(<SignaturePad initialSignatureUrl={null} onSaved={vi.fn()} disabled />);
+    expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
   });
 
   it("Clear resets the drawn stroke and disables Save Signature again", () => {

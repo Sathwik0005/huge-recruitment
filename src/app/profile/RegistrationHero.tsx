@@ -36,7 +36,6 @@ interface RegistrationHeroProps {
   activeStep: number;
   highestReachableStep: number;
   onSelectStep: (step: number) => void;
-  avatarSubmitError?: string | null;
   isSubmitted?: boolean;
   editingUnlockedByAdmin?: boolean;
   onLockedInteraction?: () => void;
@@ -50,7 +49,6 @@ export function RegistrationHero({
   activeStep,
   highestReachableStep,
   onSelectStep,
-  avatarSubmitError,
   isSubmitted = false,
   editingUnlockedByAdmin = false,
   onLockedInteraction,
@@ -85,11 +83,6 @@ export function RegistrationHero({
                   </p>
                 </div>
               </div>
-              {avatarSubmitError && (
-                <p role="alert" aria-live="assertive" className="text-label-sm text-error bg-error-container text-on-error-container rounded-lg px-3 py-2 w-fit">
-                  {avatarSubmitError}
-                </p>
-              )}
               {isSubmitted && (
                 <div className="flex items-center gap-2 w-fit text-label-sm text-candidate-secondary-fixed bg-white/10 rounded-lg px-3 py-2">
                   <span className="material-symbols-outlined text-[16px]" aria-hidden="true">

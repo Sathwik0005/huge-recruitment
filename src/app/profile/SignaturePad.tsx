@@ -24,7 +24,11 @@ export function SignaturePad({ initialSignatureUrl, onSaved, disabled = false }:
   const drawingRef = useRef(false);
   const [editing, setEditing] = useState(!initialSignatureUrl);
   const [hasStroke, setHasStroke] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // True right after a successful save, within the same session (canvas
+  // still visible with its ink intact) — freezes drawing so an accidental
+  // stray touch/click on the pad doesn't add stray lines to an already-saved
+  // signature. "Edit" explicitly re-opens it for more strokes or a Clear.
+  const [locked, setLocked] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -38,7 +42,7 @@ export function SignaturePad({ initialSignatureUrl, onSaved, disabled = false }:
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
-    if (disabled) return;
+    if (disabled || locked) return;
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     drawingRef.current = true;
@@ -60,7 +64,6 @@ export function SignaturePad({ initialSignatureUrl, onSaved, disabled = false }:
     ctx.lineTo(x, y);
     ctx.stroke();
     setHasStroke(true);
-    setSaved(false);
   }
 
   function handlePointerUp() {
@@ -73,13 +76,16 @@ export function SignaturePad({ initialSignatureUrl, onSaved, disabled = false }:
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasStroke(false);
-    setSaved(false);
     setError(undefined);
   }
 
   function handleRedraw() {
     setEditing(true);
-    setSaved(false);
+    setError(undefined);
+  }
+
+  function handleEdit() {
+    setLocked(false);
     setError(undefined);
   }
 
@@ -105,7 +111,7 @@ export function SignaturePad({ initialSignatureUrl, onSaved, disabled = false }:
         setError(data.error ?? "Could not save the signature. Please try again.");
         return;
       }
-      setSaved(true);
+      setLocked(true);
       onSaved();
     } finally {
       setUploading(false);
@@ -139,30 +145,52 @@ export function SignaturePad({ initialSignatureUrl, onSaved, disabled = false }:
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         aria-label="Draw your signature here"
-        className="w-full h-40 bg-white border border-surface-container-high rounded-lg touch-none cursor-crosshair"
+        className={`w-full h-40 bg-white border border-surface-container-high rounded-lg touch-none ${
+          locked ? "cursor-not-allowed" : "cursor-crosshair"
+        }`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       />
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={handleClear}
-          disabled={disabled || uploading}
-          className="h-9 px-4 rounded-lg bg-surface-container-low text-candidate-text-heading text-label-sm font-bold hover:bg-surface-container transition-colors disabled:opacity-60"
-        >
-          Clear
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={disabled || uploading || !hasStroke}
-          className="h-9 px-4 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-sm font-bold transition-colors disabled:opacity-60"
-        >
-          {uploading ? "Saving..." : saved ? "Signature Saved" : "Save Signature"}
-        </button>
-      </div>
+      {locked ? (
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-label-sm font-bold text-candidate-navy-dark">
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+              check_circle
+            </span>
+            Signature Saved
+          </span>
+          {!disabled && (
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="h-9 px-4 rounded-lg bg-surface-container-low text-candidate-text-heading text-label-sm font-bold hover:bg-surface-container transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={disabled || uploading}
+            className="h-9 px-4 rounded-lg bg-surface-container-low text-candidate-text-heading text-label-sm font-bold hover:bg-surface-container transition-colors disabled:opacity-60"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={disabled || uploading || !hasStroke}
+            className="h-9 px-4 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-sm font-bold transition-colors disabled:opacity-60"
+          >
+            {uploading ? "Saving..." : "Save Signature"}
+          </button>
+        </div>
+      )}
       {error && (
         <p role="alert" aria-live="assertive" className="text-label-sm text-error">
           {error}

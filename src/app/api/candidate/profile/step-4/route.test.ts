@@ -33,6 +33,7 @@ const verifiedUser = { id: "user-1" } as never;
 const validSubmit = {
   intent: "submit",
   declarationFullName: "Sathwik User",
+  declarationDate: "2026-01-01",
   declarationAccepted: true,
 };
 
@@ -74,11 +75,32 @@ describe("POST /api/candidate/profile/step-4", () => {
   });
 
   it("rejects when the declaration checkbox is not accepted", async () => {
-    const response = await POST(
-      request({ intent: "submit", declarationFullName: "Sathwik User", declarationAccepted: false }),
-    );
+    const response = await POST(request({ ...validSubmit, declarationAccepted: false }));
     expect(response.status).toBe(400);
     expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing date without writing to the DB", async () => {
+    const response = await POST(request({ ...validSubmit, declarationDate: "" }));
+    expect(response.status).toBe(400);
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a future-dated declarationDate", async () => {
+    const response = await POST(request({ ...validSubmit, declarationDate: "2099-01-01" }));
+    expect(response.status).toBe(400);
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("stores the candidate's chosen date as declarationAcceptedAt, not the server's own clock", async () => {
+    mockUpsert.mockResolvedValue({
+      id: "profile-1",
+      avatarS3Key: "candidates/user-1/avatar/x.png",
+      declarationSignatureS3Key: "candidates/user-1/step-4/signature/x.png",
+    } as never);
+    await POST(request(validSubmit));
+    const args = mockUpsert.mock.calls[0][0];
+    expect(args.update.declarationAcceptedAt).toEqual(new Date("2026-01-01"));
   });
 
   it("returns 400 for an unparseable JSON body", async () => {

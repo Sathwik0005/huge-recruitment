@@ -10,6 +10,8 @@ import { Step4Form, type Step4InitialValues } from "./Step4Form";
 import { LockedToast } from "./LockedToast";
 
 const LOCKED_MESSAGE = "Your profile has been submitted and is locked. Contact us if something needs to change.";
+const AVATAR_MISSING_MESSAGE = "Please upload a profile picture before you can submit.";
+const SIGNATURE_MISSING_MESSAGE = "Please draw and save your signature before you can submit.";
 const SUBMITTED_REDIRECT_DELAY_MS = 5000;
 
 interface ProfileWizardProps {
@@ -52,8 +54,7 @@ export function ProfileWizard({
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(initialHighestReachableStep);
   const [highestReachableStep, setHighestReachableStep] = useState(initialHighestReachableStep);
-  const [avatarSubmitError, setAvatarSubmitError] = useState<string | null>(null);
-  const [lockedToastMessage, setLockedToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; icon: string } | null>(null);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,10 +64,14 @@ export function ProfileWizard({
     };
   }, []);
 
-  function showLockedToast() {
-    setLockedToastMessage(LOCKED_MESSAGE);
+  function showToast(message: string, icon: string) {
+    setToast({ message, icon });
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => setLockedToastMessage(null), 3000);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 3000);
+  }
+
+  function showLockedToast() {
+    showToast(LOCKED_MESSAGE, "lock");
   }
 
   function handleSelectStep(step: number) {
@@ -123,7 +128,7 @@ export function ProfileWizard({
 
   return (
     <div className="flex flex-col w-full">
-      <LockedToast message={lockedToastMessage} />
+      <LockedToast message={toast?.message ?? null} icon={toast?.icon} />
       <RegistrationHero
         firstName={firstName}
         lastName={lastName}
@@ -132,7 +137,6 @@ export function ProfileWizard({
         activeStep={activeStep}
         highestReachableStep={highestReachableStep}
         onSelectStep={handleSelectStep}
-        avatarSubmitError={activeStep === 4 ? avatarSubmitError : null}
         isSubmitted={isSubmitted}
         editingUnlockedByAdmin={editingUnlockedByAdmin}
         onLockedInteraction={showLockedToast}
@@ -169,7 +173,8 @@ export function ProfileWizard({
               initialValues={step4InitialValues}
               initialSignatureUrl={initialSignatureUrl}
               onSubmitted={handleSubmitted}
-              onAvatarMissing={() => setAvatarSubmitError("A profile picture is required before you can submit.")}
+              onAvatarMissing={() => showToast(AVATAR_MISSING_MESSAGE, "photo_camera")}
+              onSignatureMissing={() => showToast(SIGNATURE_MISSING_MESSAGE, "draw")}
               readOnly={readOnly}
               onLockedInteraction={showLockedToast}
             />

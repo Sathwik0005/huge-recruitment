@@ -4,11 +4,11 @@ export function SectorInterestChart({ data }: { data: SectorInterestCount[] }) {
   const max = Math.max(1, ...data.map((entry) => entry.count));
 
   return (
-    <div className="flex-1 flex items-end gap-4 h-64">
+    <div className="flex-1 flex items-end gap-4 h-64 overflow-x-auto">
       {data.map((entry) => {
         const heightPct = Math.round((entry.count / max) * 100);
         return (
-          <div key={entry.sector} className="flex-1 flex flex-col justify-end items-center h-full">
+          <div key={entry.sector} className="flex-1 min-w-[64px] flex flex-col justify-end items-center h-full">
             <span className="text-label-sm text-on-surface-variant mb-1">{entry.count}</span>
             <div
               className="w-full max-w-[60px] rounded-t-sm bg-secondary"

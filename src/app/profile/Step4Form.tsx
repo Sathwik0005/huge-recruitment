@@ -6,14 +6,19 @@ import { SignaturePad } from "./SignaturePad";
 
 const inputClass =
   "w-full h-10 px-3 bg-surface-container-low text-candidate-text-heading rounded-lg text-body-md focus:outline-none focus:bg-surface-container-lowest focus:shadow-md transition-all";
-const disabledInputClass =
-  "w-full h-10 px-3 bg-surface-container-low text-candidate-secondary rounded-lg text-body-md cursor-not-allowed";
 const labelClass = "block text-label-md text-candidate-text-heading mb-1";
 const cardClass = "bg-surface-container-lowest rounded-2xl p-5 sm:p-6 shadow-md space-y-5";
 const errorTextClass = "text-label-sm text-error mt-1";
 
 // Scroll-to-bottom tolerance in px — accounts for sub-pixel rounding across browsers/zoom levels.
 const SCROLL_END_THRESHOLD = 8;
+
+/** Local "today" as YYYY-MM-DD, matching what an `<input type="date">` reads/writes. */
+function todayIsoDate(): string {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
+}
 
 interface DeclarationSection {
   heading: string;
@@ -252,15 +257,16 @@ interface Step4FormProps {
   initialSignatureUrl: string | null;
   onSubmitted: () => void;
   onAvatarMissing: () => void;
+  onSignatureMissing: () => void;
   readOnly?: boolean;
   onLockedInteraction?: () => void;
 }
 
-async function saveDeclaration(declarationFullName: string) {
+async function saveDeclaration(declarationFullName: string, declarationDate: string) {
   const response = await fetch("/api/candidate/profile/step-4", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ intent: "submit", declarationFullName, declarationAccepted: true }),
+    body: JSON.stringify({ intent: "submit", declarationFullName, declarationDate, declarationAccepted: true }),
   });
   const data = await response.json().catch(() => ({}));
   return { ok: response.ok, data };
@@ -271,18 +277,23 @@ export function Step4Form({
   initialSignatureUrl,
   onSubmitted,
   onAvatarMissing,
+  onSignatureMissing,
   readOnly = false,
   onLockedInteraction,
 }: Step4FormProps) {
   const [declarationFullName, setDeclarationFullName] = useState(initialValues?.declarationFullName ?? "");
+  const [declarationDate, setDeclarationDate] = useState(
+    () => initialValues?.declarationAcceptedAt?.slice(0, 10) ?? todayIsoDate(),
+  );
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
   // Already-submitted (readOnly) profiles reopen the wizard with the text already "read".
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(readOnly);
   const [hasSignature, setHasSignature] = useState(Boolean(initialSignatureUrl));
   const [error, setError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
-  const [signatureError, setSignatureError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const maxDate = todayIsoDate();
   function handleDeclarationScroll(event: UIEvent<HTMLDivElement>) {
     const el = event.currentTarget;
     if (el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_END_THRESHOLD) {
@@ -294,35 +305,44 @@ export function Step4Form({
     event.preventDefault();
     setError(null);
     setNameError(null);
-    setSignatureError(null);
+    setDateError(null);
 
     const parsed = candidateProfileStep4SubmitSchema.safeParse({
       intent: "submit",
       declarationFullName,
+      declarationDate,
       declarationAccepted,
     });
     if (!parsed.success) {
+      // declarationDate can fail more than one chained check at once (e.g. an
+      // empty string is neither "present" nor "a valid date") — keep only the
+      // first, most relevant issue per field rather than letting the last one
+      // silently overwrite it.
+      const seen = new Set<string>();
       for (const issue of parsed.error.issues) {
-        if (issue.path[0] === "declarationFullName") setNameError(issue.message);
-        if (issue.path[0] === "declarationAccepted") setError(issue.message);
+        const field = issue.path[0];
+        if (typeof field !== "string" || seen.has(field)) continue;
+        seen.add(field);
+        if (field === "declarationFullName") setNameError(issue.message);
+        if (field === "declarationDate") setDateError(issue.message);
+        if (field === "declarationAccepted") setError(issue.message);
       }
       return;
     }
 
     if (!hasSignature) {
-      setSignatureError("Please draw and save your signature before submitting.");
+      onSignatureMissing();
       return;
     }
 
     setSubmitting(true);
     try {
-      const { ok, data } = await saveDeclaration(declarationFullName);
+      const { ok, data } = await saveDeclaration(declarationFullName, declarationDate);
       if (!ok) {
         if (data.field === "avatar") {
           onAvatarMissing();
-        }
-        if (data.field === "signature") {
-          setSignatureError(data.error ?? "Please draw and save your signature before submitting.");
+        } else if (data.field === "signature") {
+          onSignatureMissing();
         } else {
           setError(data.error ?? "Something went wrong. Please try again.");
         }
@@ -333,8 +353,6 @@ export function Step4Form({
       setSubmitting(false);
     }
   }
-
-  const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit} noValidate>
@@ -456,9 +474,21 @@ export function Step4Form({
               </div>
               <div>
                 <label className={labelClass} htmlFor="declaration-date">
-                  Date
+                  Date <span className="text-error">*</span>
                 </label>
-                <input id="declaration-date" className={disabledInputClass} value={today} disabled readOnly />
+                <input
+                  id="declaration-date"
+                  type="date"
+                  className={inputClass}
+                  value={declarationDate}
+                  max={maxDate}
+                  onChange={(e) => setDeclarationDate(e.target.value)}
+                />
+                {dateError && (
+                  <p role="alert" aria-live="assertive" className={errorTextClass}>
+                    {dateError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -469,17 +499,9 @@ export function Step4Form({
               <p className="text-label-sm text-candidate-secondary mb-2">Draw your signature in the box below using your mouse, stylus, or finger.</p>
               <SignaturePad
                 initialSignatureUrl={initialSignatureUrl}
-                onSaved={() => {
-                  setHasSignature(true);
-                  setSignatureError(null);
-                }}
+                onSaved={() => setHasSignature(true)}
                 disabled={readOnly}
               />
-              {signatureError && (
-                <p role="alert" aria-live="assertive" className={errorTextClass}>
-                  {signatureError}
-                </p>
-              )}
             </div>
           </div>
         </fieldset>

@@ -10,6 +10,12 @@ import { parseCandidateProfileStep4Input } from "@/lib/validation/candidate-prof
  * the `CandidateProfile` row is always resolved/created against the verified
  * session's own `User` row.
  *
+ * `declarationAcceptedAt` is the candidate's own chosen sign-off date (a
+ * calendar picker, not a server-stamped "now") — per explicit client
+ * request, not an audit-only timestamp. `parseCandidateProfileStep4Input`
+ * still rejects a future date server-side as defense in depth behind the
+ * client's `<input type="date" max>`.
+ *
  * The submitted fields are always persisted first — even if the profile has
  * no photo or signature yet — so a candidate never loses their typed name
  * just because they forgot one of those. Only advancing
@@ -37,12 +43,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please check the highlighted fields.", issues: result.error.issues }, { status: 400 });
   }
 
-  const { declarationFullName } = result.data;
+  const { declarationFullName, declarationDate } = result.data;
+  const declarationAcceptedAt = new Date(declarationDate);
 
   const profile = await prisma.candidateProfile.upsert({
     where: { userId: session.user.id },
-    create: { userId: session.user.id, declarationFullName, declarationAcceptedAt: new Date() },
-    update: { declarationFullName, declarationAcceptedAt: new Date() },
+    create: { userId: session.user.id, declarationFullName, declarationAcceptedAt },
+    update: { declarationFullName, declarationAcceptedAt },
   });
 
   if (!profile.avatarS3Key) {
