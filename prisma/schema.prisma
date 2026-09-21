@@ -384,8 +384,9 @@ model CandidateProfile {
   step4CompletedAt DateTime?
 
   // Step 4 — Employee Declaration
-  declarationFullName   String?
-  declarationAcceptedAt DateTime?
+  declarationFullName       String?
+  declarationAcceptedAt     DateTime?
+  declarationSignatureS3Key String?
 
   // Set by an admin after final submission to temporarily re-open every
   // field for editing; the candidate's own UI clears it back to false the

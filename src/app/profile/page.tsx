@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requireVerifiedSession } from "@/lib/require-verified-session";
 import { prisma } from "@/lib/prisma";
 import { getSignedAvatarUrl } from "@/lib/candidate-avatar";
+import { getSignedDocumentUrl } from "@/lib/candidate-documents";
 import { ProfileWizard } from "./ProfileWizard";
 import type { Step1InitialValues } from "./Step1Form";
 import type { Step2InitialValues, WorkReferenceValue } from "./Step2Form";
@@ -41,6 +42,15 @@ export default async function ProfilePage() {
       // S3 credentials only resolve in Vercel Production (see src/lib/s3.ts) —
       // fall back to no avatar rather than failing the whole page.
       avatarUrl = null;
+    }
+  }
+
+  let signatureUrl: string | null = null;
+  if (candidateProfile?.declarationSignatureS3Key) {
+    try {
+      signatureUrl = await getSignedDocumentUrl(candidateProfile.declarationSignatureS3Key);
+    } catch {
+      signatureUrl = null;
     }
   }
 
@@ -146,6 +156,7 @@ export default async function ProfilePage() {
         initialWorkReferences={initialWorkReferences}
         step3InitialValues={step3InitialValues}
         step4InitialValues={step4InitialValues}
+        initialSignatureUrl={signatureUrl}
       />
     </main>
   );

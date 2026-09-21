@@ -48,7 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockCheckRateLimit.mockResolvedValue(true);
   mockRequireVerifiedSession.mockResolvedValue({ status: "ok", user: verifiedUser });
-  mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: null } as never);
+  mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: null, declarationSignatureS3Key: null } as never);
   mockUpdate.mockResolvedValue({ id: "profile-1", onboardingStep: 4 } as never);
 });
 
@@ -94,7 +94,7 @@ describe("POST /api/candidate/profile/step-4", () => {
   });
 
   it("blocks submission when the profile has no avatar, but still persists the declaration fields", async () => {
-    mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: null } as never);
+    mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: null, declarationSignatureS3Key: null } as never);
     const response = await POST(request(validSubmit));
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -106,16 +106,37 @@ describe("POST /api/candidate/profile/step-4", () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
+  it("blocks submission when the avatar is set but no signature has been saved yet", async () => {
+    mockUpsert.mockResolvedValue({
+      id: "profile-1",
+      avatarS3Key: "candidates/user-1/avatar/x.png",
+      declarationSignatureS3Key: null,
+    } as never);
+    const response = await POST(request(validSubmit));
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.field).toBe("signature");
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
   it("never trusts a client-supplied user id — always resolves via the verified session", async () => {
-    mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: "candidates/user-1/avatar/x.png" } as never);
+    mockUpsert.mockResolvedValue({
+      id: "profile-1",
+      avatarS3Key: "candidates/user-1/avatar/x.png",
+      declarationSignatureS3Key: "candidates/user-1/step-4/signature/x.png",
+    } as never);
     await POST(request({ ...validSubmit, userId: "someone-else" }));
     const args = mockUpsert.mock.calls[0][0];
     expect(args.where).toEqual({ userId: "user-1" });
     expect(args.create).toEqual({ userId: "user-1", declarationFullName: "Sathwik User", declarationAcceptedAt: expect.any(Date) });
   });
 
-  it("advances onboardingStep, sets step4CompletedAt, and clears editingUnlockedByAdmin when the avatar is already set", async () => {
-    mockUpsert.mockResolvedValue({ id: "profile-1", avatarS3Key: "candidates/user-1/avatar/x.png" } as never);
+  it("advances onboardingStep, sets step4CompletedAt, and clears editingUnlockedByAdmin when both the avatar and signature are already set", async () => {
+    mockUpsert.mockResolvedValue({
+      id: "profile-1",
+      avatarS3Key: "candidates/user-1/avatar/x.png",
+      declarationSignatureS3Key: "candidates/user-1/step-4/signature/x.png",
+    } as never);
     const response = await POST(request(validSubmit));
     expect(response.status).toBe(200);
     expect(mockUpdate).toHaveBeenCalledTimes(1);

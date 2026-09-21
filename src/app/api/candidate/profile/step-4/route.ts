@@ -11,10 +11,13 @@ import { parseCandidateProfileStep4Input } from "@/lib/validation/candidate-prof
  * session's own `User` row.
  *
  * The submitted fields are always persisted first — even if the profile has
- * no photo yet — so a candidate never loses their typed name just because
- * they forgot to add one. Only advancing `onboardingStep`/`step4CompletedAt`
- * (and returning success) is gated on `CandidateProfile.avatarS3Key` already
- * being set, per the mandatory-photo requirement that moved here from Step 3.
+ * no photo or signature yet — so a candidate never loses their typed name
+ * just because they forgot one of those. Only advancing
+ * `onboardingStep`/`step4CompletedAt` (and returning success) is gated on
+ * `CandidateProfile.avatarS3Key` (mandatory-photo requirement that moved here
+ * from Step 3) and `declarationSignatureS3Key` (drawn signature, uploaded
+ * separately via `/api/candidate/profile/step-4/signature` before this
+ * final submit) both already being set.
  */
 export async function POST(request: Request) {
   const identifier = getClientIdentifier(request);
@@ -45,6 +48,13 @@ export async function POST(request: Request) {
   if (!profile.avatarS3Key) {
     return NextResponse.json(
       { error: "A profile picture is required before you can submit.", field: "avatar" },
+      { status: 400 },
+    );
+  }
+
+  if (!profile.declarationSignatureS3Key) {
+    return NextResponse.json(
+      { error: "Please draw your signature before you can submit.", field: "signature" },
       { status: 400 },
     );
   }

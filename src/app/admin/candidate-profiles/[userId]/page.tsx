@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSignedAvatarUrl } from "@/lib/candidate-avatar";
+import { getSignedDocumentUrl } from "@/lib/candidate-documents";
 import { EditingUnlockToggle } from "../EditingUnlockToggle";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { AddressSection } from "./AddressSection";
@@ -44,6 +45,15 @@ export default async function AdminCandidateProfileDetailPage({
       // S3 credentials only resolve in Vercel Production (see src/lib/s3.ts) —
       // fall back to no avatar rather than failing the whole page.
       avatarUrl = null;
+    }
+  }
+
+  let signatureUrl: string | null = null;
+  if (profile.declarationSignatureS3Key) {
+    try {
+      signatureUrl = await getSignedDocumentUrl(profile.declarationSignatureS3Key);
+    } catch {
+      signatureUrl = null;
     }
   }
 
@@ -164,6 +174,7 @@ export default async function AdminCandidateProfileDetailPage({
           declarationFullName: profile.declarationFullName,
           declarationAcceptedAt: profile.declarationAcceptedAt,
         }}
+        signatureUrl={signatureUrl}
       />
     </div>
   );

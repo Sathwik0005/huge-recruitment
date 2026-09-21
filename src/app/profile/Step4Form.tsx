@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type UIEvent } from "react";
 import { candidateProfileStep4SubmitSchema } from "@/lib/validation/candidate-profile-step4";
+import { SignaturePad } from "./SignaturePad";
 
 const inputClass =
   "w-full h-10 px-3 bg-surface-container-low text-candidate-text-heading rounded-lg text-body-md focus:outline-none focus:bg-surface-container-lowest focus:shadow-md transition-all";
@@ -248,6 +249,7 @@ export interface Step4InitialValues {
 
 interface Step4FormProps {
   initialValues: Step4InitialValues | null;
+  initialSignatureUrl: string | null;
   onSubmitted: () => void;
   onAvatarMissing: () => void;
   readOnly?: boolean;
@@ -266,6 +268,7 @@ async function saveDeclaration(declarationFullName: string) {
 
 export function Step4Form({
   initialValues,
+  initialSignatureUrl,
   onSubmitted,
   onAvatarMissing,
   readOnly = false,
@@ -275,8 +278,10 @@ export function Step4Form({
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
   // Already-submitted (readOnly) profiles reopen the wizard with the text already "read".
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(readOnly);
+  const [hasSignature, setHasSignature] = useState(Boolean(initialSignatureUrl));
   const [error, setError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [signatureError, setSignatureError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   function handleDeclarationScroll(event: UIEvent<HTMLDivElement>) {
     const el = event.currentTarget;
@@ -289,6 +294,7 @@ export function Step4Form({
     event.preventDefault();
     setError(null);
     setNameError(null);
+    setSignatureError(null);
 
     const parsed = candidateProfileStep4SubmitSchema.safeParse({
       intent: "submit",
@@ -303,6 +309,11 @@ export function Step4Form({
       return;
     }
 
+    if (!hasSignature) {
+      setSignatureError("Please draw and save your signature before submitting.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { ok, data } = await saveDeclaration(declarationFullName);
@@ -310,7 +321,11 @@ export function Step4Form({
         if (data.field === "avatar") {
           onAvatarMissing();
         }
-        setError(data.error ?? "Something went wrong. Please try again.");
+        if (data.field === "signature") {
+          setSignatureError(data.error ?? "Please draw and save your signature before submitting.");
+        } else {
+          setError(data.error ?? "Something went wrong. Please try again.");
+        }
         return;
       }
       onSubmitted();
@@ -433,7 +448,6 @@ export function Step4Form({
                   value={declarationFullName}
                   onChange={(e) => setDeclarationFullName(e.target.value)}
                 />
-                <p className="text-label-sm text-candidate-secondary mt-1">Typing your name here serves as your signature.</p>
                 {nameError && (
                   <p role="alert" aria-live="assertive" className={errorTextClass}>
                     {nameError}
@@ -447,6 +461,26 @@ export function Step4Form({
                 <input id="declaration-date" className={disabledInputClass} value={today} disabled readOnly />
               </div>
             </div>
+
+            <div>
+              <span className={labelClass}>
+                Signature <span className="text-error">*</span>
+              </span>
+              <p className="text-label-sm text-candidate-secondary mb-2">Draw your signature in the box below using your mouse, stylus, or finger.</p>
+              <SignaturePad
+                initialSignatureUrl={initialSignatureUrl}
+                onSaved={() => {
+                  setHasSignature(true);
+                  setSignatureError(null);
+                }}
+                disabled={readOnly}
+              />
+              {signatureError && (
+                <p role="alert" aria-live="assertive" className={errorTextClass}>
+                  {signatureError}
+                </p>
+              )}
+            </div>
           </div>
         </fieldset>
       </div>
@@ -455,7 +489,7 @@ export function Step4Form({
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={submitting || !declarationAccepted}
+            disabled={submitting || !declarationAccepted || !hasSignature}
             className="w-full sm:w-auto h-11 px-7 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {submitting ? "Submitting..." : "Save & Submit"}

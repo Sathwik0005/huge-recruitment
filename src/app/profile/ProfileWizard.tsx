@@ -25,6 +25,7 @@ interface ProfileWizardProps {
   initialWorkReferences: WorkReferenceValue[];
   step3InitialValues: Step3InitialValues | null;
   step4InitialValues: Step4InitialValues | null;
+  initialSignatureUrl: string | null;
 }
 
 /**
@@ -46,6 +47,7 @@ export function ProfileWizard({
   initialWorkReferences,
   step3InitialValues,
   step4InitialValues,
+  initialSignatureUrl,
 }: ProfileWizardProps) {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(initialHighestReachableStep);
@@ -165,6 +167,7 @@ export function ProfileWizard({
           {activeStep === 4 && (
             <Step4Form
               initialValues={step4InitialValues}
+              initialSignatureUrl={initialSignatureUrl}
               onSubmitted={handleSubmitted}
               onAvatarMissing={() => setAvatarSubmitError("A profile picture is required before you can submit.")}
               readOnly={readOnly}
