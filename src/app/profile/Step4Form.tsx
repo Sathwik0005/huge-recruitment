@@ -258,6 +258,7 @@ interface Step4FormProps {
   onSubmitted: () => void;
   onAvatarMissing: () => void;
   onSignatureMissing: () => void;
+  onDeclarationNotAccepted: () => void;
   readOnly?: boolean;
   onLockedInteraction?: () => void;
 }
@@ -278,6 +279,7 @@ export function Step4Form({
   onSubmitted,
   onAvatarMissing,
   onSignatureMissing,
+  onDeclarationNotAccepted,
   readOnly = false,
   onLockedInteraction,
 }: Step4FormProps) {
@@ -285,7 +287,10 @@ export function Step4Form({
   const [declarationDate, setDeclarationDate] = useState(
     () => initialValues?.declarationAcceptedAt?.slice(0, 10) ?? todayIsoDate(),
   );
-  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  // readOnly means "already submitted, viewing/locked" — the checkbox reflects
+  // that prior confirmation as ticked. Anything else (a fresh run, or an
+  // admin-unlocked re-edit) starts unticked, even if a previous value exists.
+  const [declarationAccepted, setDeclarationAccepted] = useState(readOnly);
   // Already-submitted (readOnly) profiles reopen the wizard with the text already "read".
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(readOnly);
   const [hasSignature, setHasSignature] = useState(Boolean(initialSignatureUrl));
@@ -307,6 +312,15 @@ export function Step4Form({
     setNameError(null);
     setDateError(null);
 
+    // Checked first, and via a toast rather than an inline message: the
+    // submit button stays enabled even before the box is ticked (a disabled
+    // button gives no clue what's missing), so this is the one place that
+    // actually explains why nothing happened when it's clicked too early.
+    if (!declarationAccepted) {
+      onDeclarationNotAccepted();
+      return;
+    }
+
     const parsed = candidateProfileStep4SubmitSchema.safeParse({
       intent: "submit",
       declarationFullName,
@@ -325,7 +339,6 @@ export function Step4Form({
         seen.add(field);
         if (field === "declarationFullName") setNameError(issue.message);
         if (field === "declarationDate") setDateError(issue.message);
-        if (field === "declarationAccepted") setError(issue.message);
       }
       return;
     }
@@ -366,75 +379,78 @@ export function Step4Form({
         </p>
       )}
 
+      {/* Not wrapped in the read-only overlay below — the declaration text has
+          nothing to "lock" (it's plain text, not a form control), and must
+          stay scrollable/readable even on an already-submitted, locked profile. */}
+      <div className={cardClass}>
+        <div>
+          <h2 className="text-headline-md text-candidate-text-heading">Employee Declaration</h2>
+          <p className="text-label-sm text-candidate-secondary mt-0.5">
+            Please read the declaration below in full. Scroll to the end to enable the confirmation checkbox.
+          </p>
+        </div>
+
+        <div
+          onScroll={handleDeclarationScroll}
+          className="max-h-[28rem] overflow-y-auto rounded-xl border border-surface-container-high bg-surface-container-low p-4 sm:p-5 space-y-5 text-body-md text-candidate-text-heading"
+        >
+          <div className="text-center space-y-1 pb-2 border-b border-surface-container-high">
+            <p className="text-label-sm font-bold uppercase tracking-wider text-candidate-secondary">Huge Recruitment</p>
+            <h3 className="text-headline-sm text-candidate-text-heading">Employee Declaration</h3>
+          </div>
+
+          {DECLARATION_SECTIONS.map((section) => (
+            <section key={section.heading} className="space-y-2">
+              <h4 className="text-label-md font-bold uppercase tracking-wider text-candidate-text-heading">
+                {section.heading}
+              </h4>
+              {section.paragraphs?.map((paragraph, index) => (
+                <p key={index} className="text-body-sm">
+                  {paragraph}
+                </p>
+              ))}
+              {section.bulletIntro && <p className="text-body-sm">{section.bulletIntro}</p>}
+              {section.bullets && (
+                <ul className="list-disc pl-5 space-y-1 text-body-sm">
+                  {section.bullets.map((bullet, index) => (
+                    <li key={index}>{bullet}</li>
+                  ))}
+                </ul>
+              )}
+              {section.bulletOutro && <p className="text-body-sm">{section.bulletOutro}</p>}
+            </section>
+          ))}
+
+          <section className="space-y-2">
+            <h4 className="text-label-md font-bold uppercase tracking-wider text-candidate-text-heading">
+              19. EMPLOYEE CONFIRMATION
+            </h4>
+            <p className="text-body-sm">By signing this declaration, I confirm that:</p>
+            <ol className="list-decimal pl-5 space-y-1 text-body-sm">
+              {EMPLOYEE_CONFIRMATION_ITEMS.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="space-y-2 pt-2 border-t border-surface-container-high">
+            <h4 className="text-label-md font-bold uppercase tracking-wider text-candidate-text-heading">
+              Employee Declaration
+            </h4>
+            {SIGN_OFF_PARAGRAPHS.map((paragraph, index) => (
+              <p key={index} className="text-body-sm">
+                {paragraph}
+              </p>
+            ))}
+          </section>
+        </div>
+      </div>
+
       <div className="relative">
         {readOnly && (
           <div className="absolute inset-0 z-10 cursor-not-allowed" onClick={onLockedInteraction} role="presentation" />
         )}
-        <fieldset disabled={readOnly} className="contents space-y-6">
-          <div className={cardClass}>
-            <div>
-              <h2 className="text-headline-md text-candidate-text-heading">Employee Declaration</h2>
-              <p className="text-label-sm text-candidate-secondary mt-0.5">
-                Please read the declaration below in full. Scroll to the end to enable the confirmation checkbox.
-              </p>
-            </div>
-
-            <div
-              onScroll={handleDeclarationScroll}
-              className="max-h-[28rem] overflow-y-auto rounded-xl border border-surface-container-high bg-surface-container-low p-4 sm:p-5 space-y-5 text-body-md text-candidate-text-heading"
-            >
-              <div className="text-center space-y-1 pb-2 border-b border-surface-container-high">
-                <p className="text-label-sm font-bold uppercase tracking-wider text-candidate-secondary">Huge Recruitment</p>
-                <h3 className="text-headline-sm text-candidate-text-heading">Employee Declaration</h3>
-              </div>
-
-              {DECLARATION_SECTIONS.map((section) => (
-                <section key={section.heading} className="space-y-2">
-                  <h4 className="text-label-md font-bold uppercase tracking-wider text-candidate-text-heading">
-                    {section.heading}
-                  </h4>
-                  {section.paragraphs?.map((paragraph, index) => (
-                    <p key={index} className="text-body-sm">
-                      {paragraph}
-                    </p>
-                  ))}
-                  {section.bulletIntro && <p className="text-body-sm">{section.bulletIntro}</p>}
-                  {section.bullets && (
-                    <ul className="list-disc pl-5 space-y-1 text-body-sm">
-                      {section.bullets.map((bullet, index) => (
-                        <li key={index}>{bullet}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {section.bulletOutro && <p className="text-body-sm">{section.bulletOutro}</p>}
-                </section>
-              ))}
-
-              <section className="space-y-2">
-                <h4 className="text-label-md font-bold uppercase tracking-wider text-candidate-text-heading">
-                  19. EMPLOYEE CONFIRMATION
-                </h4>
-                <p className="text-body-sm">By signing this declaration, I confirm that:</p>
-                <ol className="list-decimal pl-5 space-y-1 text-body-sm">
-                  {EMPLOYEE_CONFIRMATION_ITEMS.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ol>
-              </section>
-
-              <section className="space-y-2 pt-2 border-t border-surface-container-high">
-                <h4 className="text-label-md font-bold uppercase tracking-wider text-candidate-text-heading">
-                  Employee Declaration
-                </h4>
-                {SIGN_OFF_PARAGRAPHS.map((paragraph, index) => (
-                  <p key={index} className="text-body-sm">
-                    {paragraph}
-                  </p>
-                ))}
-              </section>
-            </div>
-          </div>
-
+        <fieldset disabled={readOnly} className="contents">
           <div className={cardClass}>
             <label className="flex items-start gap-3 cursor-pointer has-[:disabled]:cursor-not-allowed">
               <input
@@ -511,7 +527,7 @@ export function Step4Form({
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={submitting || !declarationAccepted || !hasSignature}
+            disabled={submitting}
             className="w-full sm:w-auto h-11 px-7 rounded-lg bg-candidate-navy-dark hover:bg-candidate-secondary text-white text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {submitting ? "Submitting..." : "Save & Submit"}

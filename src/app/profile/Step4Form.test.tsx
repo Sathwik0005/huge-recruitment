@@ -61,6 +61,7 @@ describe("Step4Form", () => {
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
     expect(screen.getByText("1. PURPOSE OF THIS DECLARATION")).toBeInTheDocument();
@@ -76,6 +77,7 @@ describe("Step4Form", () => {
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
     const checkbox = screen.getByRole("checkbox");
@@ -85,41 +87,94 @@ describe("Step4Form", () => {
     expect(checkbox).not.toBeDisabled();
   });
 
-  it("keeps Save & Submit disabled until the checkbox is checked, even with a signature already saved", async () => {
-    const user = userEvent.setup();
-    const { container } = render(
-      <Step4Form
-        initialValues={null}
-        initialSignatureUrl={SAVED_SIGNATURE_URL}
-        onSubmitted={vi.fn()}
-        onAvatarMissing={vi.fn()}
-        onSignatureMissing={vi.fn()}
-      />,
-    );
-    const submitButton = screen.getByRole("button", { name: /save & submit/i });
-    expect(submitButton).toBeDisabled();
-
-    fireScrolledToEnd(container);
-    await user.click(screen.getByRole("checkbox"));
-    expect(submitButton).not.toBeDisabled();
-  });
-
-  it("keeps Save & Submit disabled when no signature has been saved, even once the checkbox is checked", async () => {
-    const user = userEvent.setup();
-    const { container } = render(
+  it("starts unticked on a fresh run, even when Save & Submit stays clickable", () => {
+    render(
       <Step4Form
         initialValues={null}
         initialSignatureUrl={null}
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
-    const submitButton = screen.getByRole("button", { name: /save & submit/i });
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("button", { name: /save & submit/i })).not.toBeDisabled();
+  });
 
-    fireScrolledToEnd(container);
-    await user.click(screen.getByRole("checkbox"));
-    expect(submitButton).toBeDisabled();
+  it("starts unticked when an admin has unlocked an already-submitted profile for re-editing, not carried over as checked", () => {
+    render(
+      <Step4Form
+        initialValues={{ declarationFullName: "Sathwik User", declarationAcceptedAt: "2026-01-01T00:00:00.000Z" }}
+        initialSignatureUrl={SAVED_SIGNATURE_URL}
+        onSubmitted={vi.fn()}
+        onAvatarMissing={vi.fn()}
+        onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
+        readOnly={false}
+      />,
+    );
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+
+  it("starts ticked (and disabled) when viewing an already-submitted, locked profile", () => {
+    render(
+      <Step4Form
+        initialValues={{ declarationFullName: "Sathwik User", declarationAcceptedAt: "2026-01-01T00:00:00.000Z" }}
+        initialSignatureUrl={SAVED_SIGNATURE_URL}
+        onSubmitted={vi.fn()}
+        onAvatarMissing={vi.fn()}
+        onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
+        readOnly
+      />,
+    );
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toBeDisabled();
+  });
+
+  it("calls onDeclarationNotAccepted (not an inline error, button stays clickable) when submitting before the checkbox is ticked", async () => {
+    const onDeclarationNotAccepted = vi.fn();
+    const onSubmitted = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Step4Form
+        initialValues={null}
+        initialSignatureUrl={SAVED_SIGNATURE_URL}
+        onSubmitted={onSubmitted}
+        onAvatarMissing={vi.fn()}
+        onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={onDeclarationNotAccepted}
+      />,
+    );
+
+    const submitButton = screen.getByRole("button", { name: /save & submit/i });
+    expect(submitButton).not.toBeDisabled();
+    await user.click(submitButton);
+
+    expect(onDeclarationNotAccepted).toHaveBeenCalledTimes(1);
+    expect(onSubmitted).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("keeps the declaration text scrollable (outside the lock overlay) even when readOnly", () => {
+    const { container } = render(
+      <Step4Form
+        initialValues={{ declarationFullName: "Sathwik User", declarationAcceptedAt: "2026-01-01T00:00:00.000Z" }}
+        initialSignatureUrl={SAVED_SIGNATURE_URL}
+        onSubmitted={vi.fn()}
+        onAvatarMissing={vi.fn()}
+        onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
+        readOnly
+      />,
+    );
+    const overlay = container.querySelector('[role="presentation"]');
+    const scrollBox = container.querySelector(".overflow-y-auto");
+    expect(overlay).not.toBeNull();
+    expect(scrollBox).not.toBeNull();
+    expect(overlay?.contains(scrollBox)).toBe(false);
   });
 
   it("pre-fills the Date field with today and caps the calendar picker at today", () => {
@@ -130,6 +185,7 @@ describe("Step4Form", () => {
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
     const dateInput = screen.getByLabelText(/Date/i) as HTMLInputElement;
@@ -148,6 +204,7 @@ describe("Step4Form", () => {
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
 
@@ -168,6 +225,7 @@ describe("Step4Form", () => {
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
 
@@ -196,6 +254,7 @@ describe("Step4Form", () => {
         onSubmitted={onSubmitted}
         onAvatarMissing={onAvatarMissing}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
 
@@ -220,14 +279,14 @@ describe("Step4Form", () => {
         onSubmitted={onSubmitted}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={onSignatureMissing}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
 
     fireScrolledToEnd(container);
     await user.click(screen.getByRole("checkbox"));
     await user.type(screen.getByLabelText(/Full Name/i), "Sathwik User");
-    // The button itself stays disabled without a signature, so submit via the form's native submit event.
-    fireEvent.submit(container.querySelector("form") as HTMLFormElement);
+    await user.click(screen.getByRole("button", { name: /save & submit/i }));
 
     expect(onSignatureMissing).toHaveBeenCalledTimes(1);
     expect(onSubmitted).not.toHaveBeenCalled();
@@ -248,6 +307,7 @@ describe("Step4Form", () => {
         onSubmitted={onSubmitted}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
 
@@ -279,6 +339,7 @@ describe("Step4Form", () => {
         onSubmitted={onSubmitted}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
       />,
     );
 
@@ -308,7 +369,7 @@ describe("Step4Form", () => {
     expect(screen.getByRole("button", { name: /save signature/i })).toBeInTheDocument();
   });
 
-  it("blocks interaction and fires onLockedInteraction when readOnly", () => {
+  it("blocks interaction on the confirmation card and fires onLockedInteraction when readOnly", () => {
     const onLockedInteraction = vi.fn();
     const { container } = render(
       <Step4Form
@@ -317,6 +378,7 @@ describe("Step4Form", () => {
         onSubmitted={vi.fn()}
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
         readOnly
         onLockedInteraction={onLockedInteraction}
       />,

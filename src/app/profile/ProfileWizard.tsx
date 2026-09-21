@@ -12,6 +12,7 @@ import { LockedToast } from "./LockedToast";
 const LOCKED_MESSAGE = "Your profile has been submitted and is locked. Contact us if something needs to change.";
 const AVATAR_MISSING_MESSAGE = "Please upload a profile picture before you can submit.";
 const SIGNATURE_MISSING_MESSAGE = "Please draw and save your signature before you can submit.";
+const DECLARATION_NOT_ACCEPTED_MESSAGE = "Please tick the confirmation checkbox before you can submit.";
 const SUBMITTED_REDIRECT_DELAY_MS = 5000;
 
 interface ProfileWizardProps {
@@ -175,6 +176,7 @@ export function ProfileWizard({
               onSubmitted={handleSubmitted}
               onAvatarMissing={() => showToast(AVATAR_MISSING_MESSAGE, "photo_camera")}
               onSignatureMissing={() => showToast(SIGNATURE_MISSING_MESSAGE, "draw")}
+              onDeclarationNotAccepted={() => showToast(DECLARATION_NOT_ACCEPTED_MESSAGE, "checklist")}
               readOnly={readOnly}
               onLockedInteraction={showLockedToast}
             />
