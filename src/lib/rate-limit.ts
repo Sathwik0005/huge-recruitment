@@ -14,7 +14,9 @@ type RateLimitKind =
   | "candidateProfileStep3Document"
   | "candidateProfileStep4Save"
   | "candidateProfileStep4Signature"
-  | "postcodeLookup";
+  | "postcodeLookup"
+  | "contactForm"
+  | "employerRequest";
 
 let ratelimiters: Record<RateLimitKind, Ratelimit> | null = null;
 
@@ -86,6 +88,16 @@ function getRatelimiters() {
       redis,
       limiter: Ratelimit.slidingWindow(20, "10 m"),
       prefix: "ratelimit:postcode-lookup",
+    }),
+    contactForm: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "10 m"),
+      prefix: "ratelimit:contact-form",
+    }),
+    employerRequest: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "10 m"),
+      prefix: "ratelimit:employer-request",
     }),
   };
   return ratelimiters;

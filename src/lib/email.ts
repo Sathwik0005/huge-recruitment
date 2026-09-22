@@ -57,6 +57,95 @@ export async function sendAdminApplicationNotification(input: ApplicationNotific
   }
 }
 
+type ContactFormNotificationInput = {
+  name: string;
+  company: string;
+  email: string;
+  phone: string;
+  reason: string;
+  message: string;
+};
+
+export async function sendContactFormNotification(input: ContactFormNotificationInput): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  const to = process.env.RESEND_ADMIN_NOTIFICATION_EMAIL;
+  if (!apiKey || !from || !to) {
+    console.error("Resend is not configured; skipping contact form notification");
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const html = `
+    <p>A new contact form message has been submitted.</p>
+    <ul>
+      <li><strong>Name:</strong> ${escapeHtml(input.name)}</li>
+      ${input.company ? `<li><strong>Company:</strong> ${escapeHtml(input.company)}</li>` : ""}
+      <li><strong>Email:</strong> ${escapeHtml(input.email)}</li>
+      <li><strong>Phone:</strong> ${escapeHtml(input.phone)}</li>
+      <li><strong>Reason:</strong> ${escapeHtml(input.reason)}</li>
+    </ul>
+    <p><strong>Message:</strong></p>
+    <p>${escapeHtml(input.message).replace(/\n/g, "<br />")}</p>
+  `;
+
+  try {
+    await resend.emails.send({
+      from,
+      to,
+      replyTo: input.email,
+      subject: `New contact form message from ${input.name}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send contact form notification", {
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+  }
+}
+
+type EmployerRequestNotificationInput = {
+  fullName: string;
+  companyEmail: string;
+  sector: string;
+  requirementDetail: string;
+};
+
+export async function sendEmployerRequestNotification(input: EmployerRequestNotificationInput): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  const to = process.env.RESEND_ADMIN_NOTIFICATION_EMAIL;
+  if (!apiKey || !from || !to) {
+    console.error("Resend is not configured; skipping employer request notification");
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const html = `
+    <p>A new employer talent request has been submitted.</p>
+    <ul>
+      <li><strong>Name:</strong> ${escapeHtml(input.fullName)}</li>
+      <li><strong>Company Email:</strong> ${escapeHtml(input.companyEmail)}</li>
+      <li><strong>Sector:</strong> ${escapeHtml(input.sector)}</li>
+    </ul>
+    ${input.requirementDetail ? `<p><strong>Requirement Detail:</strong></p><p>${escapeHtml(input.requirementDetail).replace(/\n/g, "<br />")}</p>` : ""}
+  `;
+
+  try {
+    await resend.emails.send({
+      from,
+      to,
+      replyTo: input.companyEmail,
+      subject: `New employer talent request from ${input.fullName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send employer request notification", {
+      errorClass: error instanceof Error ? error.constructor.name : typeof error,
+    });
+  }
+}
+
 type ApplicationConfirmationInput = {
   applicationId: string;
   publicReference: string;
