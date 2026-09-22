@@ -3,8 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { EmploymentType, PayType } from "@/generated/prisma/enums";
 import type { PublicJob } from "@/lib/job-dto";
 import { getSiteUrl } from "@/lib/site-url";
-
-const SITE_NAME = "Huge Recruitment";
+import { SITE_NAME, LOGO_URL } from "@/lib/brand";
 
 // schema.org/JobPosting only accepts a fixed enum for employmentType. Our
 // EmploymentType values don't map 1:1, so this is a specification-compliance
@@ -55,10 +54,14 @@ export function buildJobPostingJsonLd(job: PublicJob) {
     datePosted: job.publishedAt ? job.publishedAt.toISOString() : undefined,
     validThrough: job.closingDate ? job.closingDate.toISOString() : undefined,
     employmentType: SCHEMA_EMPLOYMENT_TYPE[job.employmentType],
+    // Applications are submitted entirely on-site via /api/applications —
+    // there is no external ATS redirect, so this is accurate, not aspirational.
+    directApply: true,
     hiringOrganization: {
       "@type": "Organization",
       name: SITE_NAME,
       sameAs: siteUrl,
+      logo: LOGO_URL,
     },
     jobLocation: {
       "@type": "Place",

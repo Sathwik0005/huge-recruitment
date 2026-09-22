@@ -11,16 +11,16 @@ interface HeroSlide {
 const HERO_SLIDES: HeroSlide[] = [
   {
     src: "https://res.cloudinary.com/uhfrtle0/image/upload/v1786409190/hero_section_2.png",
-    alt: "Placeholder hero image 2 — manufacturing floor",
+    alt: "Manufacturing floor",
   },
   {
     src: "https://res.cloudinary.com/uhfrtle0/image/upload/v1786409190/hero_section_1.png",
-    alt: "Placeholder hero image 1 — warehouse and logistics team",
+    alt: "Warehouse and logistics team",
   },
 
   {
     src: "https://res.cloudinary.com/uhfrtle0/image/upload/v1786409190/hero_section_3.png",
-    alt: "Placeholder hero image 3 — distribution and delivery",
+    alt: "Distribution and delivery operations",
   },
 ];
 

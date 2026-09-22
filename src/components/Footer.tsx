@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CookieSettingsLink from "@/components/CookieSettingsLink";
 
 const SECTOR_LINKS = [
   "Production",
@@ -51,6 +52,9 @@ export default function Footer() {
             </li>
             <li>
               <Link href="/terms-of-service" className="text-white/70 hover:text-secondary-container transition-colors duration-200 underline-offset-4 hover:underline">Terms of service</Link>
+            </li>
+            <li>
+              <CookieSettingsLink />
             </li>
           </ul>
         </div>

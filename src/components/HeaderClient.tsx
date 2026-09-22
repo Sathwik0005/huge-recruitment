@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/LogoutButton";
+import { trackEvent } from "@/lib/analytics";
 
 const NAV_LINKS = [
   { href: "/jobs", label: "Find Jobs" },
@@ -87,6 +88,7 @@ export default function HeaderClient({ isLoggedIn, isAdmin }: HeaderClientProps)
               </Link>
               <Link
                 href="/register"
+                onClick={() => trackEvent("register_cta_click", { location: "header_desktop" })}
                 className="font-body-md text-body-md bg-primary text-on-primary px-6 py-2 rounded-lg hover:opacity-90 transition-all duration-200"
               >
                 Register
@@ -153,7 +155,10 @@ export default function HeaderClient({ isLoggedIn, isAdmin }: HeaderClientProps)
                   </Link>
                   <Link
                     href="/register"
-                    onClick={() => setMenuOpen(false)}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      trackEvent("register_cta_click", { location: "header_mobile" });
+                    }}
                     className="font-body-md text-body-md bg-primary text-on-primary text-center px-6 py-3 rounded-lg hover:opacity-90 transition-all duration-200"
                   >
                     Register

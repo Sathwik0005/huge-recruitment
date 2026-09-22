@@ -20,7 +20,9 @@ import type { NextConfig } from "next";
 // hydration entirely in `next dev` (React logs a fatal "eval() is not
 // supported" console error and the page never finishes rendering). Production
 // builds never call eval(), so 'unsafe-eval' is scoped to development only.
-const SCRIPT_SRC = `'self' 'unsafe-inline' https://apis.google.com${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`;
+// https://www.googletagmanager.com is gtag.js itself (src/components/GoogleAnalytics.tsx) —
+// only ever injected client-side after a visitor explicitly accepts analytics consent.
+const SCRIPT_SRC = `'self' 'unsafe-inline' https://apis.google.com https://www.googletagmanager.com${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`;
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
@@ -40,7 +42,9 @@ const CSP_DIRECTIVES = [
   // silently dropped by the browser rather than matching anything.
   "img-src 'self' data: blob: https://res.cloudinary.com https://media.istockphoto.com https://thumbs.dreamstime.com https://*.s3.eu-west-2.amazonaws.com",
   "media-src 'self' https://res.cloudinary.com",
-  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://huge-recruitment.firebaseapp.com https://vercel.com https://*.public.blob.vercel-storage.com",
+  // GA4 (gtag.js) sends analytics hits to these hosts — only reachable once a
+  // visitor has granted analytics consent (see GoogleAnalytics.tsx).
+  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://huge-recruitment.firebaseapp.com https://vercel.com https://*.public.blob.vercel-storage.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com",
   "frame-src 'self' https://huge-recruitment.firebaseapp.com https://accounts.google.com https://www.google.com https://apis.google.com",
   "object-src 'none'",
   "base-uri 'self'",

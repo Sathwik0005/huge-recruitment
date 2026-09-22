@@ -45,7 +45,17 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">3. How We Use Your Information</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">3. Cookies and Analytics</h2>
+            <p className="text-body-md text-on-surface-variant">
+              We use a strictly necessary session cookie to keep you signed in. We also use Google Analytics to
+              understand how visitors use the Service, but only if you accept analytics cookies via the consent
+              banner — analytics cookies are never set before you actively choose to accept them, and you can
+              change your choice at any time using the &quot;Cookie Settings&quot; link in the site footer.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-headline-md text-on-surface mb-3">4. How We Use Your Information</h2>
             <p className="text-body-md text-on-surface-variant mb-3">We use the information we collect to:</p>
             <ul className="list-disc pl-6 space-y-2 text-body-md text-on-surface-variant">
               <li>Create and manage your account, and verify your identity.</li>
@@ -57,7 +67,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">4. How We Share Your Information</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">5. How We Share Your Information</h2>
             <p className="text-body-md text-on-surface-variant">
               We do not sell your personal information. We share information only: with employers or candidates
               as necessary to facilitate the recruitment process you initiate, with service providers who help us
@@ -67,7 +77,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">5. Data Retention</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">6. Data Retention</h2>
             <p className="text-body-md text-on-surface-variant">
               We retain your personal information for as long as your account is active or as needed to provide
               you the Service. You may request deletion of your account and associated data at any time, subject
@@ -76,7 +86,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">6. Data Security</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">7. Data Security</h2>
             <p className="text-body-md text-on-surface-variant">
               We use industry-standard safeguards, including encrypted authentication and secure session
               handling, to protect your information. No method of transmission or storage is completely secure,
@@ -85,7 +95,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">7. Your Rights and Choices</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">8. Your Rights and Choices</h2>
             <p className="text-body-md text-on-surface-variant">
               Depending on your location, you may have the right to access, correct, or delete your personal
               information, or to object to certain processing. You can update most of your account information
@@ -94,7 +104,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">8. Children&apos;s Privacy</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">9. Children&apos;s Privacy</h2>
             <p className="text-body-md text-on-surface-variant">
               The Service is not directed to individuals under the age of 16, and we do not knowingly collect
               personal information from children.
@@ -102,7 +112,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">9. Changes to This Policy</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">10. Changes to This Policy</h2>
             <p className="text-body-md text-on-surface-variant">
               We may update this Privacy Policy from time to time. We will notify you of material changes by
               posting a notice on the Service. Continued use of the Service after changes take effect constitutes
@@ -111,7 +121,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-headline-md text-on-surface mb-3">10. Contact Us</h2>
+            <h2 className="text-headline-md text-on-surface mb-3">11. Contact Us</h2>
             <p className="text-body-md text-on-surface-variant">
               If you have questions about this Privacy Policy or how we handle your information, please contact
               us through the support channels listed on our website.

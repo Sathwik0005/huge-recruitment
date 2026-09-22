@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 const REASON_OPTIONS = [
   { value: "hiring", label: "Hiring Talent" },
@@ -14,9 +15,11 @@ export default function ContactForm() {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const reason = new FormData(event.currentTarget).get("reason");
     setSubmitted(true);
     event.currentTarget.reset();
     setTimeout(() => setSubmitted(false), 3000);
+    trackEvent("contact_form_submitted", { reason: typeof reason === "string" ? reason : "unknown" });
   }
 
   return (

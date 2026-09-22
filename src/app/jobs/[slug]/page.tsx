@@ -16,6 +16,7 @@ import { GuestApplicationForm } from "./GuestApplicationForm";
 import { SimilarJobs } from "./SimilarJobs";
 import { excerptFromOverview } from "@/lib/job-formatters";
 import { buildJobPostingJsonLd } from "@/lib/job-json-ld";
+import { buildJobBreadcrumbJsonLd } from "@/lib/breadcrumb-json-ld";
 import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata({
@@ -52,6 +53,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ slug
   if (!job) notFound();
 
   const jobPostingJsonLd = job.isOpen ? buildJobPostingJsonLd(job) : null;
+  const breadcrumbJsonLd = buildJobBreadcrumbJsonLd(job);
 
   return (
     <main className="min-h-screen bg-background pb-16">
@@ -61,6 +63,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ slug
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd).replace(/</g, "\\u003c") }}
         />
       )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }}
+      />
       <div className="mx-auto w-full max-w-container-max px-margin-mobile pt-6 md:px-margin-desktop md:pt-8">
         <nav aria-label="Breadcrumb" className="mb-6 overflow-x-auto">
           <ol className="flex min-w-max items-center gap-2 text-sm text-on-surface-variant">

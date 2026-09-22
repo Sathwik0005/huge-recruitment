@@ -158,11 +158,13 @@ export default async function HomePage() {
       <section className="py-xxl bg-white">
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <Reveal className="relative">
-              <img
+            <Reveal className="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-lg">
+              <Image
                 src="https://res.cloudinary.com/uhfrtle0/image/upload/v1786410327/office.jpg"
-                alt="Recruitment Team"
-                className="w-full h-auto rounded-xl object-cover shadow-lg"
+                alt="The Huge Recruitment team in their office"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
               />
             </Reveal>
 
@@ -198,9 +200,9 @@ export default async function HomePage() {
 
       <section className="relative overflow-hidden pt-xxl pb-xxl">
         <Reveal className="relative z-10 max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center">
-          <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-4">
+          <h2 className="font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-4">
             Our Sectors
-          </h1>
+          </h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
             A premier UK recruitment partner specializing in delivering
             excellence across core industrial sectors. We connect high-value

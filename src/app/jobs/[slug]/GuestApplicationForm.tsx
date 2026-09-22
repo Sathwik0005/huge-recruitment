@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { upload } from "@vercel/blob/client";
 import { CV_PATHNAME_PREFIX, MAX_CV_SIZE_BYTES } from "@/lib/cv-constants";
+import { trackEvent } from "@/lib/analytics";
 
 const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx"];
 
@@ -130,6 +131,7 @@ export function GuestApplicationForm({ jobId, isOpen }: { jobId: string; isOpen:
 
       setPublicReference(data.publicReference);
       setStatus("success");
+      trackEvent("job_application_submitted", { job_id: jobId });
     } catch {
       setErrors({ form: "Something went wrong. Please try again." });
       setStatus("idle");
