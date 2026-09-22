@@ -259,6 +259,7 @@ interface Step4FormProps {
   onAvatarMissing: () => void;
   onSignatureMissing: () => void;
   onDeclarationNotAccepted: () => void;
+  onScrollRequired: () => void;
   readOnly?: boolean;
   onLockedInteraction?: () => void;
 }
@@ -280,6 +281,7 @@ export function Step4Form({
   onAvatarMissing,
   onSignatureMissing,
   onDeclarationNotAccepted,
+  onScrollRequired,
   readOnly = false,
   onLockedInteraction,
 }: Step4FormProps) {
@@ -452,7 +454,12 @@ export function Step4Form({
         )}
         <fieldset disabled={readOnly} className="contents">
           <div className={cardClass}>
-            <label className="flex items-start gap-3 cursor-pointer has-[:disabled]:cursor-not-allowed">
+            <label
+              className="flex items-start gap-3 cursor-pointer has-[:disabled]:cursor-not-allowed"
+              onClick={() => {
+                if (!hasScrolledToEnd) onScrollRequired();
+              }}
+            >
               <input
                 type="checkbox"
                 className="mt-1 h-4 w-4"
@@ -466,9 +473,6 @@ export function Step4Form({
                 clarification where necessary.
               </span>
             </label>
-            {!hasScrolledToEnd && (
-              <p className="text-label-sm text-candidate-secondary">Scroll to the end of the declaration above to enable this checkbox.</p>
-            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

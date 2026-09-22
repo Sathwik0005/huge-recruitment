@@ -871,6 +871,7 @@ export function Step2Form({
                 <input
                   id="ref-manager-email"
                   type="email"
+                  autoComplete="off"
                   className={refInputClass}
                   placeholder="sarah.j@amazon.com"
                   maxLength={200}

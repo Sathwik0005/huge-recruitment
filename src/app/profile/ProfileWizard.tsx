@@ -13,6 +13,7 @@ const LOCKED_MESSAGE = "Your profile has been submitted and is locked. Contact u
 const AVATAR_MISSING_MESSAGE = "Please upload a profile picture before you can submit.";
 const SIGNATURE_MISSING_MESSAGE = "Please draw and save your signature before you can submit.";
 const DECLARATION_NOT_ACCEPTED_MESSAGE = "Please tick the confirmation checkbox before you can submit.";
+const SCROLL_REQUIRED_MESSAGE = "Scroll to the end of the declaration above to enable this checkbox.";
 const SUBMITTED_REDIRECT_DELAY_MS = 5000;
 
 interface ProfileWizardProps {
@@ -177,6 +178,7 @@ export function ProfileWizard({
               onAvatarMissing={() => showToast(AVATAR_MISSING_MESSAGE, "photo_camera")}
               onSignatureMissing={() => showToast(SIGNATURE_MISSING_MESSAGE, "draw")}
               onDeclarationNotAccepted={() => showToast(DECLARATION_NOT_ACCEPTED_MESSAGE, "checklist")}
+              onScrollRequired={() => showToast(SCROLL_REQUIRED_MESSAGE, "swipe_down")}
               readOnly={readOnly}
               onLockedInteraction={showLockedToast}
             />

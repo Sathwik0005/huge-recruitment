@@ -62,6 +62,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
     expect(screen.getByText("1. PURPOSE OF THIS DECLARATION")).toBeInTheDocument();
@@ -78,6 +79,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
     const checkbox = screen.getByRole("checkbox");
@@ -96,6 +98,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
     expect(screen.getByRole("checkbox")).not.toBeChecked();
@@ -111,6 +114,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
         readOnly={false}
       />,
     );
@@ -126,6 +130,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
         readOnly
       />,
     );
@@ -146,6 +151,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={onDeclarationNotAccepted}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -158,6 +164,31 @@ describe("Step4Form", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it("calls onScrollRequired (not an inline message) when the checkbox is clicked before scrolling to the end", async () => {
+    const onScrollRequired = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Step4Form
+        initialValues={null}
+        initialSignatureUrl={SAVED_SIGNATURE_URL}
+        onSubmitted={vi.fn()}
+        onAvatarMissing={vi.fn()}
+        onSignatureMissing={vi.fn()}
+        onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={onScrollRequired}
+      />,
+    );
+
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).toBeDisabled();
+    expect(screen.queryByText(/scroll to the end of the declaration/i)).not.toBeInTheDocument();
+
+    await user.click(checkbox.closest("label")!);
+
+    expect(onScrollRequired).toHaveBeenCalledTimes(1);
+    expect(checkbox).not.toBeChecked();
+  });
+
   it("keeps the declaration text scrollable (outside the lock overlay) even when readOnly", () => {
     const { container } = render(
       <Step4Form
@@ -167,6 +198,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
         readOnly
       />,
     );
@@ -186,6 +218,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
     const dateInput = screen.getByLabelText(/Date/i) as HTMLInputElement;
@@ -205,6 +238,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -226,6 +260,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -255,6 +290,7 @@ describe("Step4Form", () => {
         onAvatarMissing={onAvatarMissing}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -280,6 +316,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={onSignatureMissing}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -308,6 +345,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -340,6 +378,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
       />,
     );
 
@@ -379,6 +418,7 @@ describe("Step4Form", () => {
         onAvatarMissing={vi.fn()}
         onSignatureMissing={vi.fn()}
         onDeclarationNotAccepted={vi.fn()}
+        onScrollRequired={vi.fn()}
         readOnly
         onLockedInteraction={onLockedInteraction}
       />,
