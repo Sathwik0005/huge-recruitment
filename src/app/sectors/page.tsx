@@ -30,7 +30,7 @@ const SECTOR_ROWS: SectorRowData[] = [
     description:
       "Providing end-to-end staffing solutions for high-volume logistics hubs. We specialize in operational management, inventory control, and skilled fulfillment roles to keep your supply chain moving seamlessly.",
     image:
-      "https://res.cloudinary.com/dgz2omokl/image/upload/v1785158972/istockphoto-1125121546-2048x2048_ja5lnf.jpg",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080991/warehouse_image.jpg",
     alt: "A professional warehouse facility",
     icon: "inventory_2",
     tags: ["Warehouse Managers", "Inventory Controllers", "Fulfillment Specialists"],
@@ -48,7 +48,7 @@ const SECTOR_ROWS: SectorRowData[] = [
     description:
       "Driving efficiency in modern manufacturing through expert placement of technical specialists. From precision engineering to quality assurance, we source the talent that powers industrial innovation.",
     image:
-      "https://media.istockphoto.com/id/2188581107/photo/worker-in-protective-gear-welding-metal-in-an-industrial-factory-setting-with-sparks-flying.jpg?s=2048x2048&w=is&k=20&c=BqLt67Fsb0H0ThXyNuFjylTrJw3D4hfCqpyYiuSEEBU=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080990/manufacturing_image.jpg",
     alt: "Manufacturing components",
     icon: "precision_manufacturing",
     tags: ["Production Engineers", "Quality Assurance", "CNC Technicians"],
@@ -66,7 +66,7 @@ const SECTOR_ROWS: SectorRowData[] = [
     description:
       "Connecting the supply chain with elite logistics and transportation talent across the UK. We ensure your distribution networks operate at peak capacity with reliable, certified professionals.",
     image:
-      "https://media.istockphoto.com/id/2091314722/photo/aerial-view-rows-of-trucks-driving-in-harbor-with-trailers.jpg?s=2048x2048&w=is&k=20&c=IJhAgon8QnHs9Hl24q2riGKCt6B3JY-ZhVmg92LXqwk=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080990/distribution_image.jpg",
     alt: "Distribution center",
     icon: "local_shipping",
     tags: ["Fleet Leads", "Supply Chain", "Route Planners"],
@@ -84,7 +84,7 @@ const SECTOR_ROWS: SectorRowData[] = [
     description:
       "Specialized recruitment for the automotive lifecycle, from R&D to high-end assembly. We connect leading automotive brands with specialized engineers, technicians, and operational experts.",
     image:
-      "https://media.istockphoto.com/id/1320950379/photo/3d-render-of-a-car-on-robotic-welding-line.jpg?s=2048x2048&w=is&k=20&c=lk5rIAzBqjs47kCacA9UNJ4-w4cS11UwIG_KL-jEqOs=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080989/automotive_image.jpg",
     alt: "Automotive research facility",
     icon: "directions_car",
     tags: ["R&D Engineers", "Assembly Technicians", "Plant Leadership"],
@@ -102,7 +102,7 @@ const SECTOR_ROWS: SectorRowData[] = [
     description:
       "Tailored workforce solutions for high-output production environments and technical lines. We provide skilled line workers, quality control operatives, and technical management to maintain continuous output.",
     image:
-      "https://res.cloudinary.com/uhfrtle0/image/upload/v1789137196/production.webp",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080779/production_image.jpg",
     alt: "Production environment",
     icon: "factory",
     tags: ["Line Management", "Technical Operators", "Process Improvement"],

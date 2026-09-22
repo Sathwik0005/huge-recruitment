@@ -13,27 +13,27 @@ interface Review {
 const REVIEWS: Review[] = [
   {
     quote:
-      "Huge Recruitment found me a role that actually matched my skills within two weeks. The whole process felt personal, not transactional.",
-    name: "John Smith",
-    role: "Software Engineer • Successfully Placed",
+      "I'd been out of work for a while and was starting to lose hope. My recruiter got me onto an automotive production line within days and checked in with me through the whole first week.",
+    name: "James Carter",
+    role: "Production Operative • Successfully Placed",
     image:
-      "https://res.cloudinary.com/dgz2omokl/image/upload/v1785158545/istockphoto-613560020-612x612_vxtsxo.jpg",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790079184/review_section_1.jpg",
   },
   {
     quote:
-      "As an employer, the quality of candidates we received was consistently high. They understood our technical requirements from the first call.",
-    name: "Amara Okafor",
-    role: "Head of Operations, Vertex Logistics",
+      "The team took the time to understand what shifts actually worked for me before sending my CV anywhere. Got offered a warehouse role that fit my schedule perfectly.",
+    name: "Daniel Brooks",
+    role: "Warehouse Operative • Successfully Placed",
     image:
-      "https://res.cloudinary.com/dgz2omokl/image/upload/v1785158778/workers-weld-car-body-details-welding-shop-automobile-en-enterprise-industry-50670085_gwkwh7.webp",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790079511/review_section_2.jpg",
   },
   {
     quote:
-      "I was nervous about switching industries, but my recruiter coached me through every interview. Couldn't have landed the offer without them.",
-    name: "Priya Nair",
-    role: "Plant Director • Successfully Placed",
+      "Moving to a new city for work was daunting, but they lined up interviews before I'd even arrived in Manchester. I started my new logistics role the same week I moved.",
+    name: "Sophie Bennett",
+    role: "Logistics Assistant • Successfully Placed",
     image:
-      "https://thumbs.dreamstime.com/b/portrait-smiling-male-warehouse-worker-showing-thumbs-up-camera-holds-smartphone-industrial-storage-stockroom-logistics-453529467.jpg",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080031/review_section_3.jpg",
   },
 ];
 

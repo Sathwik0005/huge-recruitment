@@ -40,7 +40,7 @@ const SECTORS: Sector[] = [
     description:
       "Providing end-to-end staffing solutions for high-volume logistics hubs. We specialize in operational management, inventory control, and skilled fulfillment roles.",
     image:
-      "https://res.cloudinary.com/dgz2omokl/image/upload/v1785158972/istockphoto-1125121546-2048x2048_ja5lnf.jpg",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080991/warehouse_image.jpg",
     alt: "A professional warehouse facility",
     colSpan: "md:col-span-8",
     height: "h-[400px]",
@@ -57,7 +57,7 @@ const SECTORS: Sector[] = [
     description:
       "Driving efficiency in modern manufacturing through expert placement of technical specialists.",
     image:
-      "https://media.istockphoto.com/id/2188581107/photo/worker-in-protective-gear-welding-metal-in-an-industrial-factory-setting-with-sparks-flying.jpg?s=2048x2048&w=is&k=20&c=BqLt67Fsb0H0ThXyNuFjylTrJw3D4hfCqpyYiuSEEBU=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080990/manufacturing_image.jpg",
     alt: "Manufacturing components",
     colSpan: "md:col-span-4",
     height: "h-[400px]",
@@ -73,7 +73,7 @@ const SECTORS: Sector[] = [
     description:
       "Connecting the supply chain with elite logistics and transportation talent across the UK.",
     image:
-      "https://media.istockphoto.com/id/2091314722/photo/aerial-view-rows-of-trucks-driving-in-harbor-with-trailers.jpg?s=2048x2048&w=is&k=20&c=IJhAgon8QnHs9Hl24q2riGKCt6B3JY-ZhVmg92LXqwk=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080990/distribution_image.jpg",
     alt: "Distribution center",
     colSpan: "md:col-span-4",
     height: "h-[450px]",
@@ -86,7 +86,7 @@ const SECTORS: Sector[] = [
     description:
       "Specialized recruitment for the automotive lifecycle, from R&D to high-end assembly.",
     image:
-      "https://media.istockphoto.com/id/1320950379/photo/3d-render-of-a-car-on-robotic-welding-line.jpg?s=2048x2048&w=is&k=20&c=lk5rIAzBqjs47kCacA9UNJ4-w4cS11UwIG_KL-jEqOs=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080989/automotive_image.jpg",
     alt: "Automotive research facility",
     colSpan: "md:col-span-4",
     height: "h-[450px]",
@@ -98,7 +98,7 @@ const SECTORS: Sector[] = [
     description:
       "Tailored workforce solutions for high-output production environments and technical lines.",
     image:
-      "https://res.cloudinary.com/uhfrtle0/image/upload/v1789137196/production.webp",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080779/production_image.jpg",
     alt: "Production environment",
     colSpan: "md:col-span-4",
     height: "h-[450px]",

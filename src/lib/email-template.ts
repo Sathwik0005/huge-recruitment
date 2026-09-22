@@ -58,8 +58,8 @@ export function renderBrandedEmailHtml({
         <td align="center" style="padding: 32px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid ${COLOR_BORDER};">
             <tr>
-              <td style="background-color: ${COLOR_PRIMARY}; padding: 24px; text-align: center;">
-                <img src="${LOGO_URL}" alt="${escapeHtml(BRAND_NAME)}" height="32" style="height: 32px; width: auto;" />
+              <td style="background-color: ${COLOR_PRIMARY}; padding: 28px 24px; text-align: center;">
+                <img src="${LOGO_URL}" alt="${escapeHtml(BRAND_NAME)}" height="64" style="height: 64px; width: auto;" />
               </td>
             </tr>
             <tr>
