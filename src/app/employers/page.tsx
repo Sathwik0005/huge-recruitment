@@ -89,27 +89,27 @@ const SECTORS = [
   {
     title: "Warehousing",
     image:
-      "https://res.cloudinary.com/dgz2omokl/image/upload/v1785158972/istockphoto-1125121546-2048x2048_ja5lnf.jpg",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080991/warehouse_image.jpg",
   },
   {
     title: "Manufacturing",
     image:
-      "https://media.istockphoto.com/id/2188581107/photo/worker-in-protective-gear-welding-metal-in-an-industrial-factory-setting-with-sparks-flying.jpg?s=2048x2048&w=is&k=20&c=BqLt67Fsb0H0ThXyNuFjylTrJw3D4hfCqpyYiuSEEBU=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080990/manufacturing_image.jpg",
   },
   {
     title: "Distribution",
     image:
-      "https://media.istockphoto.com/id/2091314722/photo/aerial-view-rows-of-trucks-driving-in-harbor-with-trailers.jpg?s=2048x2048&w=is&k=20&c=IJhAgon8QnHs9Hl24q2riGKCt6B3JY-ZhVmg92LXqwk=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080990/distribution_image.jpg",
   },
   {
     title: "Automotive",
     image:
-      "https://media.istockphoto.com/id/1320950379/photo/3d-render-of-a-car-on-robotic-welding-line.jpg?s=2048x2048&w=is&k=20&c=lk5rIAzBqjs47kCacA9UNJ4-w4cS11UwIG_KL-jEqOs=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080989/automotive_image.jpg",
   },
   {
     title: "Production",
     image:
-      "https://media.istockphoto.com/id/1204069369/photo/group-of-students-in-an-engineering-class-looking-at-the-teacher.jpg?s=2048x2048&w=is&k=20&c=32sby6950eelHjZ1yjICb4_h9k8X227r7Cs8vwFR8xs=",
+      "https://res.cloudinary.com/uhfrtle0/image/upload/v1790080779/production_image.jpg",
   },
 ];
 
